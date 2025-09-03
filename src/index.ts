@@ -24,8 +24,8 @@ app.use('/*', cors({
 app.get('/', (c) => {
   return c.json({
     success: true,
-    message: 'ML-DatabaseWorker is running',
-    version: '1.0.0',
+    message: 'ML-DatabaseWorker is running with auto-deployment',
+    version: '1.0.1',
     timestamp: new Date().toISOString(),
     environment: c.env.ENVIRONMENT || 'development'
   });
