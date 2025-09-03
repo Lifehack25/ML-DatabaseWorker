@@ -1,0 +1,25 @@
+{
+  "name": "ml-databaseworker",
+  "version": "0.0.1",
+  "description": "Memory Locks Database Worker - Cloudflare Worker with D1",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest",
+    "cf-typegen": "wrangler types",
+    "db:migrate": "wrangler d1 execute ML-Database --file=./db/schema.sql",
+    "db:migrate:remote": "wrangler d1 execute ML-Database --remote --file=./db/schema.sql",
+    "db:seed": "wrangler d1 execute ML-Database --file=./db/sample-data.sql",
+    "db:seed:remote": "wrangler d1 execute ML-Database --remote --file=./db/sample-data.sql"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  }
+}

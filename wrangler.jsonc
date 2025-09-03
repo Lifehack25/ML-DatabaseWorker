@@ -1,0 +1,13 @@
+{
+  "name": "ml-databaseworker",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-04-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ML-Database",
+      "database_id": "3afe1cf6-4d2c-4461-9b41-1c8e232e8361"
+    }
+  ]
+}
