@@ -1,5 +1,5 @@
 {
-  "name": "ml-databaseworker",
+  "name": "ml-database-worker",
   "main": "src/index.ts",
   "compatibility_date": "2024-04-15",
   "compatibility_flags": ["nodejs_compat"],
