@@ -38,12 +38,31 @@ export interface MediaObject {
 }
 
 // Request/Response DTOs
+export interface ValidatedIdentifier {
+  isEmail: boolean;
+  identifier: string;
+}
+
+export interface SendCodeDto {
+  isLogin: boolean;
+  isEmail: boolean;
+  identifier: string;
+}
+
 export interface CreateUserRequest {
   name: string;
   email?: string;
   phone_number?: string;
   auth_provider?: string;
   provider_id?: string;
+}
+
+export interface CreateUserDto {
+  name: string;
+  email?: string;
+  phoneNumber?: string;
+  authProvider?: string;
+  providerId?: string;
 }
 
 export interface CreateLockRequest {
@@ -80,10 +99,29 @@ export interface UpdateMediaObjectRequest {
   display_order?: number;
 }
 
-export interface ApiResponse<T = any> {
+// Lock DTOs matching .NET API structure
+export interface LockDto {
+  LockId: number;
+  LockName: string;
+  SealDate?: string; // ISO date string (YYYY-MM-DD) - nullable DateOnly from .NET
+  NotifiedWhenScanned: boolean;
+  ScanCount: number;
+}
+
+export interface LockConnectUserDto {
+  userId: number;
+  lockId: number;
+}
+
+// API Response wrapper types
+export interface Response<T = any> {
   success: boolean;
+  message?: string;
   data?: T;
-  error?: string;
+}
+
+export interface Response {
+  success: boolean;
   message?: string;
 }
 

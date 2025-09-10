@@ -13,6 +13,7 @@ export interface UpdateLockRequest {
   album_title?: string;
   seal_date?: string; // ISO date string YYYY-MM-DD
   notified_when_scanned?: boolean;
+  user_id?: number;
 }
 
 export class LockRepository {
@@ -28,18 +29,6 @@ export class LockRepository {
     }
 
     return result.results[0];
-  }
-
-  async findAll(limit: number = 100): Promise<Lock[]> {
-    const result: D1Result<Lock> = await this.db.prepare(
-      'SELECT * FROM locks ORDER BY created_at DESC LIMIT ?'
-    ).bind(limit).all();
-
-    if (!result.success) {
-      throw new Error('Failed to fetch locks');
-    }
-
-    return result.results;
   }
 
   async findByUserId(userId: number, limit: number = 100): Promise<Lock[]> {
@@ -119,6 +108,11 @@ export class LockRepository {
       values.push(lockData.notified_when_scanned);
     }
 
+    if (lockData.user_id !== undefined) {
+      updateFields.push('user_id = ?');
+      values.push(lockData.user_id);
+    }
+
     if (updateFields.length === 0) {
       throw new Error('No fields provided for update');
     }
@@ -166,40 +160,5 @@ export class LockRepository {
     }
 
     return updatedLock;
-  }
-
-  async findWithMediaCount(limit: number = 100): Promise<Array<Lock & { media_count: number }>> {
-    const result = await this.db.prepare(`
-      SELECT l.*, COUNT(mo.id) as media_count
-      FROM locks l
-      LEFT JOIN media_objects mo ON l.id = mo.lock_id
-      GROUP BY l.id
-      ORDER BY l.created_at DESC
-      LIMIT ?
-    `).bind(limit).all();
-
-    if (!result.success) {
-      throw new Error('Failed to fetch locks with media count');
-    }
-
-    return result.results as Array<Lock & { media_count: number }>;
-  }
-
-  async findByUserIdWithMediaCount(userId: number, limit: number = 100): Promise<Array<Lock & { media_count: number }>> {
-    const result = await this.db.prepare(`
-      SELECT l.*, COUNT(mo.id) as media_count
-      FROM locks l
-      LEFT JOIN media_objects mo ON l.id = mo.lock_id
-      WHERE l.user_id = ?
-      GROUP BY l.id
-      ORDER BY l.created_at DESC
-      LIMIT ?
-    `).bind(userId, limit).all();
-
-    if (!result.success) {
-      throw new Error('Failed to fetch user locks with media count');
-    }
-
-    return result.results as Array<Lock & { media_count: number }>;
   }
 }

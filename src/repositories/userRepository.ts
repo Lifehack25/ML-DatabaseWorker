@@ -15,18 +15,6 @@ export class UserRepository {
     return result.results[0];
   }
 
-  async findAll(limit: number = 100): Promise<User[]> {
-    const result: D1Result<User> = await this.db.prepare(
-      'SELECT * FROM users ORDER BY created_at DESC LIMIT ?'
-    ).bind(limit).all();
-
-    if (!result.success) {
-      throw new Error('Failed to fetch users');
-    }
-
-    return result.results;
-  }
-
   async create(userData: CreateUserRequest): Promise<User> {
     // Apply default values matching the .NET model defaults
     const user = {
@@ -96,27 +84,5 @@ export class UserRepository {
     }
 
     return result.results[0];
-  }
-
-  async findByProvider(authProvider: string, providerId: string): Promise<User | null> {
-    const result: D1Result<User> = await this.db.prepare(
-      'SELECT * FROM users WHERE auth_provider = ? AND provider_id = ?'
-    ).bind(authProvider, providerId).all();
-
-    if (!result.success || result.results.length === 0) {
-      return null;
-    }
-
-    return result.results[0];
-  }
-
-  async updateLastLogin(id: number): Promise<void> {
-    const result: D1Result = await this.db.prepare(
-      'UPDATE users SET last_login_at = ? WHERE id = ?'
-    ).bind(new Date().toISOString(), id).run();
-
-    if (!result.success) {
-      throw new Error('Failed to update last login');
-    }
   }
 }

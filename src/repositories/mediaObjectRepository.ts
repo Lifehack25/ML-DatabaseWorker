@@ -34,18 +34,6 @@ export class MediaObjectRepository {
     return result.results[0];
   }
 
-  async findAll(limit: number = 100): Promise<MediaObject[]> {
-    const result: D1Result<MediaObject> = await this.db.prepare(
-      'SELECT * FROM media_objects ORDER BY created_at DESC LIMIT ?'
-    ).bind(limit).all();
-
-    if (!result.success) {
-      throw new Error('Failed to fetch media objects');
-    }
-
-    return result.results;
-  }
-
   async findByLockId(lockId: number, limit: number = 100): Promise<MediaObject[]> {
     const result: D1Result<MediaObject> = await this.db.prepare(
       'SELECT * FROM media_objects WHERE lock_id = ? ORDER BY display_order ASC, created_at DESC LIMIT ?'
@@ -56,18 +44,6 @@ export class MediaObjectRepository {
     }
 
     return result.results;
-  }
-
-  async findMainPictureByLockId(lockId: number): Promise<MediaObject | null> {
-    const result: D1Result<MediaObject> = await this.db.prepare(
-      'SELECT * FROM media_objects WHERE lock_id = ? AND is_main_picture = 1 LIMIT 1'
-    ).bind(lockId).all();
-
-    if (!result.success || result.results.length === 0) {
-      return null;
-    }
-
-    return result.results[0];
   }
 
   async create(mediaData: CreateMediaObjectRequest): Promise<MediaObject> {
@@ -213,42 +189,5 @@ export class MediaObjectRepository {
     if (!result.success) {
       throw new Error('Failed to unset main picture');
     }
-  }
-
-  async reorderDisplayOrder(lockId: number, mediaOrder: Array<{ id: number; display_order: number }>): Promise<void> {
-    // Start a transaction-like operation by updating all in sequence
-    for (const item of mediaOrder) {
-      const result: D1Result = await this.db.prepare(
-        'UPDATE media_objects SET display_order = ? WHERE id = ? AND lock_id = ?'
-      ).bind(item.display_order, item.id, lockId).run();
-
-      if (!result.success) {
-        throw new Error(`Failed to update display order for media object ${item.id}`);
-      }
-    }
-  }
-
-  async findByMediaType(mediaType: string, limit: number = 100): Promise<MediaObject[]> {
-    const result: D1Result<MediaObject> = await this.db.prepare(
-      'SELECT * FROM media_objects WHERE media_type = ? ORDER BY created_at DESC LIMIT ?'
-    ).bind(mediaType, limit).all();
-
-    if (!result.success) {
-      throw new Error('Failed to fetch media objects by type');
-    }
-
-    return result.results;
-  }
-
-  async countByLockId(lockId: number): Promise<number> {
-    const result = await this.db.prepare(
-      'SELECT COUNT(*) as count FROM media_objects WHERE lock_id = ?'
-    ).bind(lockId).all();
-
-    if (!result.success || result.results.length === 0) {
-      throw new Error('Failed to count media objects');
-    }
-
-    return result.results[0].count as number;
   }
 }
