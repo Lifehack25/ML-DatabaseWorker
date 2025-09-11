@@ -12,7 +12,7 @@ const users = new Hono<{ Bindings: Bindings }>();
 const getUserRepo = (db: D1Database) => new UserRepository(db);
 
 // Unified auth-check endpoint for login and registration
-users.post('/auth-check', async (c) => {
+users.post('/exist-check', async (c) => {
   try {
     const dto: SendCodeDto = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
@@ -22,17 +22,18 @@ users.post('/auth-check', async (c) => {
       ? await userRepo.findByEmail(dto.identifier)
       : await userRepo.findByPhoneNumber(dto.identifier);
     
-    const response: Response<{exists: boolean, userId?: number}> = {
+    const response: Response<boolean> = {
       success: true,
       message: 'User existence check completed',
-      data: { exists: !!user, userId: user?.id || undefined }
+      data: !!user
     };
     return c.json(response);
   } catch (error) {
     console.error('Error in auth-check:', error);
-    const response: Response = {
+    const response: Response<boolean> = {
       success: false,
-      message: 'Failed to process auth check'
+      message: 'Failed to process auth check',
+      data: false
     };
     return c.json(response, 500);
   }
@@ -49,24 +50,26 @@ users.post('/find-by-identifier', async (c) => {
       : await userRepo.findByPhoneNumber(identifier);
     
     if (user) {
-      const response: Response<{userId: number}> = {
+      const response: Response<number> = {
         success: true,
         message: 'User found successfully',
-        data: { userId: user.id }
+        data: user.id
       };
       return c.json(response);
     } else {
-      const response: Response = {
-        success: false,
-        message: 'User not found'
+      const response: Response<number> = {
+        success: true,
+        message: 'User not found',
+        data: 0
       };
       return c.json(response, 404);
     }
   } catch (error) {
     console.error('Error finding user:', error);
-    const response: Response = {
+    const response: Response<number> = {
       success: false,
-      message: 'Failed to find user'
+      message: 'Failed to find user',
+      data: 0
     };
     return c.json(response, 500);
   }
@@ -84,9 +87,10 @@ users.post('/create', async (c) => {
       : userData.phoneNumber ? await userRepo.findByPhoneNumber(userData.phoneNumber) : null;
     
     if (existingUser) {
-      const response: Response = {
+      const response: Response<number> = {
         success: false,
-        message: 'User already exists'
+        message: 'User already exists',
+        data: 0
       };
       return c.json(response, 409); // Conflict status
     }
@@ -100,17 +104,18 @@ users.post('/create', async (c) => {
       provider_id: userData.providerId
     });
     
-    const response: Response<{userId: number}> = {
+    const response: Response<number> = {
       success: true,
       message: 'User created successfully',
-      data: { userId: newUser.id }
+      data: newUser.id
     };
     return c.json(response, 201); // Created status
   } catch (error) {
     console.error('Error creating user:', error);
-    const response: Response = {
+    const response: Response<number> = {
       success: false,
-      message: 'Failed to create user'
+      message: 'Failed to create user',
+      data: 0
     };
     return c.json(response, 500);
   }
