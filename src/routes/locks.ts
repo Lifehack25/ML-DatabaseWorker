@@ -39,7 +39,11 @@ locks.get('/user/:userId', async (c) => {
     // Convert to DTOs
     const lockDtos = locks.map(mapLockToDto);
     
-    return c.json(lockDtos);
+    return c.json({
+      success: true,
+      message: `Retrieved ${lockDtos.length} locks for user ${userId}`,
+      data: lockDtos
+    });
   } catch (error) {
     console.error('Error fetching user locks:', error);
     return c.json({
