@@ -161,4 +161,16 @@ export class LockRepository {
 
     return updatedLock;
   }
+
+  async getLastLock(): Promise<Lock | null> {
+    const result: D1Result<Lock> = await this.db.prepare(
+      'SELECT * FROM locks ORDER BY id DESC LIMIT 1'
+    ).all();
+
+    if (!result.success || result.results.length === 0) {
+      return null;
+    }
+
+    return result.results[0];
+  }
 }

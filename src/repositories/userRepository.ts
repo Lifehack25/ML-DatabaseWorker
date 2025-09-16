@@ -85,4 +85,26 @@ export class UserRepository {
 
     return result.results[0];
   }
+
+  async findByProvider(authProvider: string, providerId: string): Promise<User | null> {
+    const result: D1Result<User> = await this.db.prepare(
+      'SELECT * FROM users WHERE auth_provider = ? AND provider_id = ?'
+    ).bind(authProvider, providerId).all();
+
+    if (!result.success || result.results.length === 0) {
+      return null;
+    }
+
+    return result.results[0];
+  }
+
+  async linkProvider(userId: number, authProvider: string, providerId: string): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET auth_provider = ?, provider_id = ? WHERE id = ?'
+    ).bind(authProvider, providerId, userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to link OAuth provider to user');
+    }
+  }
 }

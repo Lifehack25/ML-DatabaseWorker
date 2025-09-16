@@ -61,6 +61,7 @@ app.get('/api/status', (c) => {
 // Mount route modules (ready for endpoints)
 app.route('/users', users);
 app.route('/locks', locks);
+app.route('/api/locks', locks); // For CreateLocks tool compatibility
 app.route('/media-objects', mediaObjects);
 app.route('/albums', albums);
 

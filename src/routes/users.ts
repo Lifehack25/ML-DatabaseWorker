@@ -121,4 +121,75 @@ users.post('/create', async (c) => {
   }
 });
 
+// Find user by OAuth provider
+users.post('/find-by-provider', async (c) => {
+  try {
+    const { authProvider, providerId } = await c.req.json();
+    const userRepo = getUserRepo(c.env.DB);
+    
+    const user = await userRepo.findByProvider(authProvider, providerId);
+    
+    if (user) {
+      const response: Response<number> = {
+        success: true,
+        message: 'User found successfully',
+        data: user.id
+      };
+      return c.json(response);
+    } else {
+      const response: Response<number> = {
+        success: true,
+        message: 'User not found',
+        data: 0
+      };
+      return c.json(response, 404);
+    }
+  } catch (error) {
+    console.error('Error finding user by provider:', error);
+    const response: Response<number> = {
+      success: false,
+      message: 'Failed to find user by provider',
+      data: 0
+    };
+    return c.json(response, 500);
+  }
+});
+
+// Link OAuth provider to existing user
+users.post('/link-provider', async (c) => {
+  try {
+    const { userId, authProvider, providerId } = await c.req.json();
+    const userRepo = getUserRepo(c.env.DB);
+    
+    // Check if user exists
+    const user = await userRepo.findById(userId);
+    if (!user) {
+      const response: Response<boolean> = {
+        success: false,
+        message: 'User not found',
+        data: false
+      };
+      return c.json(response, 404);
+    }
+    
+    // Link the provider
+    await userRepo.linkProvider(userId, authProvider, providerId);
+    
+    const response: Response<boolean> = {
+      success: true,
+      message: 'OAuth provider linked successfully',
+      data: true
+    };
+    return c.json(response);
+  } catch (error) {
+    console.error('Error linking provider:', error);
+    const response: Response<boolean> = {
+      success: false,
+      message: 'Failed to link OAuth provider',
+      data: false
+    };
+    return c.json(response, 500);
+  }
+});
+
 export default users;
