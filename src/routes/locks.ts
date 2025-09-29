@@ -17,7 +17,9 @@ const mapLockToDto = (lock: Lock): LockDto => ({
   LockId: lock.id,
   LockName: lock.lock_name,
   SealDate: lock.seal_date || undefined,
-  NotifiedWhenScanned: lock.notified_when_scanned,
+  NotifiedWhenScanned: typeof lock.notified_when_scanned === 'number'
+    ? lock.notified_when_scanned === 1
+    : Boolean(lock.notified_when_scanned),
   ScanCount: lock.scan_count
 });
 
