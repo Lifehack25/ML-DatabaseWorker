@@ -65,6 +65,12 @@ export interface CreateUserDto {
   providerId?: string;
 }
 
+export interface UpdateAuthMetadataRequest {
+  userId: number;
+  emailVerified?: boolean | null;
+  lastLoginAt?: string;
+}
+
 export interface CreateLockRequest {
   lock_name?: string;
   album_title?: string;

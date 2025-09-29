@@ -107,4 +107,33 @@ export class UserRepository {
       throw new Error('Failed to link OAuth provider to user');
     }
   }
+
+  async updateAuthMetadata(userId: number, metadata: { email_verified?: boolean; last_login_at?: string }): Promise<void> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+
+    if (typeof metadata.email_verified === 'boolean') {
+      updates.push('email_verified = ?');
+      values.push(metadata.email_verified ? 1 : 0);
+    }
+
+    if (typeof metadata.last_login_at === 'string') {
+      updates.push('last_login_at = ?');
+      values.push(metadata.last_login_at);
+    }
+
+    if (updates.length === 0) {
+      return;
+    }
+
+    values.push(userId);
+
+    const result = await this.db.prepare(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...values).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update user authentication metadata');
+    }
+  }
 }
