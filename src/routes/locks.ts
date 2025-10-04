@@ -1,7 +1,17 @@
 import { Hono } from 'hono';
 import { LockRepository } from '../repositories/lockRepository';
 import { UserRepository } from '../repositories/userRepository';
-import { CreateLockRequest, UpdateLockRequest, Lock, LockDto, LockConnectUserDto, Response } from '../types';
+import {
+  CreateLockRequest,
+  UpdateLockRequest,
+  UpdateLockNameRequest,
+  UpdateNotificationPreferenceRequest,
+  ModifyLockSealRequest,
+  Lock,
+  LockDto,
+  LockConnectUserDto,
+  Response,
+} from '../types';
 
 type Bindings = {
   DB: D1Database;
@@ -106,6 +116,130 @@ locks.post('/connect', async (c) => {
   }
 });
 
+// PATCH /locks/name - Update lock name
+locks.patch('/name', async (c) => {
+  try {
+    const dto = (await c.req.json()) as UpdateLockNameRequest;
+
+    if (!dto?.lockId || !dto.newName?.trim()) {
+      return c.json({
+        success: false,
+        message: 'Both lockId and newName are required',
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const updatedLock = await lockRepo.update(dto.lockId, { lock_name: dto.newName.trim() });
+
+    return c.json({
+      success: true,
+      message: 'Lock name updated successfully',
+      data: mapLockToDto(updatedLock),
+    });
+  } catch (error) {
+    console.error('Error updating lock name:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to update lock name',
+    }, 500);
+  }
+});
+
+// PATCH /locks/notification - Update notification preference
+locks.patch('/notification', async (c) => {
+  try {
+    const dto = (await c.req.json()) as UpdateNotificationPreferenceRequest;
+
+    if (!dto?.lockId || typeof dto.notifiedWhenScanned !== 'boolean') {
+      return c.json({
+        success: false,
+        message: 'lockId and notifiedWhenScanned are required',
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const updatedLock = await lockRepo.update(dto.lockId, {
+      notified_when_scanned: dto.notifiedWhenScanned,
+    });
+
+    return c.json({
+      success: true,
+      message: 'Notification preference updated successfully',
+      data: mapLockToDto(updatedLock),
+    });
+  } catch (error) {
+    console.error('Error updating notification preference:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to update notification preference',
+    }, 500);
+  }
+});
+
+const formatDateOnly = (date: Date): string => date.toISOString().split('T')[0];
+
+// POST /locks/seal - Seal lock (set seal date to today)
+locks.post('/seal', async (c) => {
+  try {
+    const dto = (await c.req.json()) as ModifyLockSealRequest;
+
+    if (!dto?.lockId) {
+      return c.json({
+        success: false,
+        message: 'lockId is required',
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const updatedLock = await lockRepo.update(dto.lockId, {
+      seal_date: formatDateOnly(new Date()),
+    });
+
+    return c.json({
+      success: true,
+      message: 'Lock sealed successfully',
+      data: mapLockToDto(updatedLock),
+    });
+  } catch (error) {
+    console.error('Error sealing lock:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to seal lock',
+    }, 500);
+  }
+});
+
+// POST /locks/unseal - Unseal lock (clear seal date)
+locks.post('/unseal', async (c) => {
+  try {
+    const dto = (await c.req.json()) as ModifyLockSealRequest;
+
+    if (!dto?.lockId) {
+      return c.json({
+        success: false,
+        message: 'lockId is required',
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const updatedLock = await lockRepo.update(dto.lockId, {
+      seal_date: null,
+    });
+
+    return c.json({
+      success: true,
+      message: 'Lock unsealed successfully',
+      data: mapLockToDto(updatedLock),
+    });
+  } catch (error) {
+    console.error('Error unsealing lock:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to unseal lock',
+    }, 500);
+  }
+});
+
 // POST /api/locks/generate/{totalLocks} - Bulk create locks for CreateLocks tool
 locks.post('/create/:totalLocks', async (c) => {
   try {
@@ -134,8 +268,8 @@ locks.post('/create/:totalLocks', async (c) => {
       const lockId = startId + i;
       
       batch.push({
-        lock_name: `Memory Lock ${lockId}`,
-        album_title: `Album ${lockId}`,
+        lock_name: `Memory Lock`,
+        album_title: `Romeo & Juliet`,
         seal_date: undefined,
         user_id: undefined,
         notified_when_scanned: false

@@ -74,7 +74,7 @@ export interface UpdateAuthMetadataRequest {
 export interface CreateLockRequest {
   lock_name?: string;
   album_title?: string;
-  seal_date?: string; // ISO date string YYYY-MM-DD
+  seal_date?: string | null; // ISO date string YYYY-MM-DD
   notified_when_scanned?: boolean;
   user_id?: number;
 }
@@ -82,8 +82,22 @@ export interface CreateLockRequest {
 export interface UpdateLockRequest {
   lock_name?: string;
   album_title?: string;
-  seal_date?: string; // ISO date string YYYY-MM-DD
+  seal_date?: string | null; // ISO date string YYYY-MM-DD
   notified_when_scanned?: boolean;
+}
+
+export interface UpdateLockNameRequest {
+  lockId: number;
+  newName: string;
+}
+
+export interface UpdateNotificationPreferenceRequest {
+  lockId: number;
+  notifiedWhenScanned: boolean;
+}
+
+export interface ModifyLockSealRequest {
+  lockId: number;
 }
 
 export interface CreateMediaObjectRequest {
