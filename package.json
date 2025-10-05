@@ -20,6 +20,7 @@
     "wrangler": "^4.33.2"
   },
   "dependencies": {
+    "hashids": "^2.3.0",
     "hono": "^4.0.0"
   }
 }

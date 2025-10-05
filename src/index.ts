@@ -64,6 +64,7 @@ app.route('/locks', locks);
 app.route('/api/locks', locks); // For CreateLocks tool compatibility
 app.route('/media-objects', mediaObjects);
 app.route('/albums', albums);
+app.route('/album', albums);
 
 // 404 handler
 app.notFound((c) => {

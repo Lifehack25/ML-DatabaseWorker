@@ -6,7 +6,7 @@ type Bindings = {
 
 export async function authenticateWorkerApiKey(c: Context<{ Bindings: Bindings }>, next: Next) {
   // Skip authentication for public endpoints
-  if (c.req.path === '/public/health' || c.req.path === '/') {
+  if (c.req.path === '/public/health' || c.req.path === '/' || c.req.path.startsWith('/album')) {
     return next();
   }
 

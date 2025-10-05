@@ -133,6 +133,26 @@ export interface LockConnectUserDto {
   lockId: number;
 }
 
+export interface AlbumMediaDto {
+  mediaId: number;
+  cloudflareId: string;
+  url: string;
+  fileName?: string | null;
+  mediaType: string;
+  isMainPicture: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface AlbumDetailsDto {
+  lockId: number;
+  lockName: string;
+  albumTitle: string;
+  sealDate?: string | null;
+  hashedLockId: string;
+  media: AlbumMediaDto[];
+}
+
 // API Response wrapper types
 export interface Response<T = any> {
   success: boolean;

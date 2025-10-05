@@ -178,8 +178,8 @@ locks.patch('/notification', async (c) => {
 
 const formatDateOnly = (date: Date): string => date.toISOString().split('T')[0];
 
-// POST /locks/seal - Seal lock (set seal date to today)
-locks.post('/seal', async (c) => {
+// PATCH /locks/seal - Toggle seal state
+locks.patch('/seal', async (c) => {
   try {
     const dto = (await c.req.json()) as ModifyLockSealRequest;
 
@@ -191,51 +191,30 @@ locks.post('/seal', async (c) => {
     }
 
     const lockRepo = getLockRepo(c.env.DB);
-    const updatedLock = await lockRepo.update(dto.lockId, {
-      seal_date: formatDateOnly(new Date()),
-    });
+    const existingLock = await lockRepo.findById(dto.lockId);
 
-    return c.json({
-      success: true,
-      message: 'Lock sealed successfully',
-      data: mapLockToDto(updatedLock),
-    });
-  } catch (error) {
-    console.error('Error sealing lock:', error);
-    return c.json({
-      success: false,
-      message: 'Failed to seal lock',
-    }, 500);
-  }
-});
-
-// POST /locks/unseal - Unseal lock (clear seal date)
-locks.post('/unseal', async (c) => {
-  try {
-    const dto = (await c.req.json()) as ModifyLockSealRequest;
-
-    if (!dto?.lockId) {
+    if (!existingLock) {
       return c.json({
         success: false,
-        message: 'lockId is required',
-      }, 400);
+        message: 'Lock not found',
+      }, 404);
     }
 
-    const lockRepo = getLockRepo(c.env.DB);
+    const isCurrentlySealed = Boolean(existingLock.seal_date);
     const updatedLock = await lockRepo.update(dto.lockId, {
-      seal_date: null,
+      seal_date: isCurrentlySealed ? null : formatDateOnly(new Date()),
     });
 
     return c.json({
       success: true,
-      message: 'Lock unsealed successfully',
+      message: isCurrentlySealed ? 'Lock unsealed successfully' : 'Lock sealed successfully',
       data: mapLockToDto(updatedLock),
     });
   } catch (error) {
-    console.error('Error unsealing lock:', error);
+    console.error('Error toggling seal state:', error);
     return c.json({
       success: false,
-      message: 'Failed to unseal lock',
+      message: 'Failed to update seal state',
     }, 500);
   }
 });
