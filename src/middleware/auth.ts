@@ -24,3 +24,6 @@ export async function authenticateWorkerApiKey(c: Context<{ Bindings: Bindings }
   // API key is valid, proceed to next middleware/handler
   await next();
 }
+
+// Export alias for backwards compatibility
+export const authMiddleware = authenticateWorkerApiKey;
