@@ -14,6 +14,7 @@ const albums = new Hono<{ Bindings: Bindings }>();
 
 // Apply auth middleware to protected routes
 albums.use('/update-title', authMiddleware);
+albums.use('/publish-changes', authMiddleware);
 
 const HASHIDS_SALT = 'GzFbxMxQkArX1cLMo3tnGmpNxL5lUOROXXum5xfhiPU=';
 const HASHIDS_MIN_LENGTH = 6;
@@ -31,6 +32,25 @@ const mapMediaToDto = (media: any): AlbumMediaDto => ({
   displayOrder: media.display_order ?? 0,
   createdAt: media.created_at
 });
+
+type PublishChangesRequest = {
+  lockId: number;
+  albumTitle?: string;
+  existingMedia?: Array<{
+    mediaId: number;
+    displayOrder: number;
+    isMainPicture: boolean;
+  }>;
+  newMedia?: Array<{
+    cloudflareId: string;
+    url: string;
+    fileName?: string | null;
+    mediaType: string;
+    displayOrder: number;
+    isMainPicture: boolean;
+  }>;
+  deletedMediaIds?: number[];
+};
 
 albums.get('/:identifier', async (c) => {
   const { identifier } = c.req.param();
@@ -142,93 +162,93 @@ albums.post('/update-title', async (c) => {
 // Batch publish changes endpoint - called by Core API after authentication
 albums.post('/publish-changes', async (c) => {
   try {
-    const {
-      lockId,
-      albumTitle,
-      mediaChanges
-    }: {
-      lockId: number;
-      albumTitle?: string;
-      mediaChanges: Array<{
-        mediaId?: number;
-        changeType: 'reorder' | 'delete';
-        newDisplayOrder?: number;
-      }>
-    } = await c.req.json();
+    const body: PublishChangesRequest = await c.req.json();
 
+    const lockId = body.lockId;
     if (!lockId) {
-      return c.json({
-        success: false,
-        message: 'Lock ID is required'
-      }, 400);
+      return c.json({ success: false, message: 'Lock ID is required' }, 400);
     }
 
     const lockRepo = new LockRepository(c.env.DB);
     const mediaRepo = new MediaObjectRepository(c.env.DB);
 
-    // Verify lock exists
     const lock = await lockRepo.findById(lockId);
     if (!lock) {
-      return c.json({
-        success: false,
-        message: 'Lock not found'
-      }, 404);
+      return c.json({ success: false, message: 'Lock not found' }, 404);
     }
 
+    const existingMedia = await mediaRepo.findByLockId(lockId, 500);
+    const existingLookup = new Map(existingMedia.map((media) => [media.id, media]));
+
+    const existingUpdates = body.existingMedia ?? [];
+    const newMedia = body.newMedia ?? [];
+    const deletedMediaIds = body.deletedMediaIds ?? [];
+
+    // Validate existing media references
+    for (const update of existingUpdates) {
+      if (!existingLookup.has(update.mediaId)) {
+        return c.json({ success: false, message: `Unknown media item ${update.mediaId}` }, 400);
+      }
+    }
+
+    for (const id of deletedMediaIds) {
+      if (!existingLookup.has(id)) {
+        return c.json({ success: false, message: `Unknown media item ${id}` }, 400);
+      }
+    }
+
+    const originalMain = existingMedia.find((media) => Boolean(media.is_main_picture));
     let albumTitleUpdated = false;
-    let reorderedCount = 0;
-    let deletedCount = 0;
-    const errors: string[] = [];
 
-    // Update album title if provided
-    if (albumTitle && albumTitle !== lock.album_title) {
-      try {
-        await lockRepo.update(lockId, { album_title: albumTitle });
-        albumTitleUpdated = true;
-      } catch (error) {
-        errors.push('Failed to update album title');
-      }
+    if (body.albumTitle && body.albumTitle !== lock.album_title) {
+      await lockRepo.update(lockId, { album_title: body.albumTitle });
+      albumTitleUpdated = true;
     }
 
-    // Process media changes
-    for (const change of mediaChanges) {
-      try {
-        if (change.changeType === 'reorder' && change.mediaId && change.newDisplayOrder !== undefined) {
-          await mediaRepo.update(change.mediaId, { display_order: change.newDisplayOrder });
-          reorderedCount++;
-        } else if (change.changeType === 'delete' && change.mediaId) {
-          const deleted = await mediaRepo.delete(change.mediaId);
-          if (deleted) {
-            deletedCount++;
-          }
-        }
-      } catch (error) {
-        errors.push(`Failed to ${change.changeType} media item ${change.mediaId}`);
-      }
+    // Update existing media (display order + main flag)
+    for (const update of existingUpdates) {
+      await mediaRepo.update(update.mediaId, {
+        display_order: update.displayOrder,
+        is_main_picture: update.isMainPicture
+      });
     }
 
-    const summary = [
-      albumTitleUpdated ? 'Album title updated' : '',
-      reorderedCount > 0 ? `${reorderedCount} items reordered` : '',
-      deletedCount > 0 ? `${deletedCount} items deleted` : ''
-    ].filter(Boolean).join(', ') || 'No changes made';
+    // Delete media objects
+    for (const id of deletedMediaIds) {
+      await mediaRepo.delete(id);
+    }
 
-    return c.json({
-      success: errors.length === 0,
-      data: {
-        albumTitleUpdated,
-        reorderedCount,
-        deletedCount,
-        summary,
-        errors: errors.length > 0 ? errors : undefined
-      }
-    });
+    // Create new media objects
+    for (const media of newMedia) {
+      await mediaRepo.create({
+        lock_id: lockId,
+        cloudflare_id: media.cloudflareId,
+        url: media.url,
+        file_name: media.fileName ?? null,
+        media_type: media.mediaType,
+        is_main_picture: media.isMainPicture,
+        display_order: media.displayOrder
+      });
+    }
+
+    const updatedMedia = await mediaRepo.findByLockId(lockId, 500);
+    const updatedMain = updatedMedia.find((media) => Boolean(media.is_main_picture));
+
+    const response = {
+      albumTitleUpdated,
+      mainImageUpdated: (originalMain?.id ?? null) !== (updatedMain?.id ?? null),
+      addedCount: newMedia.length,
+      deletedCount: deletedMediaIds.length,
+      reorderedCount: existingUpdates.filter((update) => {
+        const original = existingLookup.get(update.mediaId);
+        return original ? original.display_order !== update.displayOrder : false;
+      }).length
+    };
+
+    return c.json({ success: true, data: response });
   } catch (error) {
     console.error('Error publishing album changes:', error);
-    return c.json({
-      success: false,
-      message: 'Failed to publish album changes'
-    }, 500);
+    return c.json({ success: false, message: 'Failed to publish album changes' }, 500);
   }
 });
 
