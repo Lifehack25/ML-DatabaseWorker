@@ -14,11 +14,11 @@ const users = new Hono<{ Bindings: Bindings }>();
 // Helper function to get UserRepository instance
 const getUserRepo = (db: D1Database) => new UserRepository(db);
 
-const respondSuccess = <T>(c: UsersContext, data: T, message?: string, status = 200) =>
-  c.json({ success: true, message, data }, status);
+const respondSuccess = <T>(c: UsersContext, data: T, message?: string) =>
+  c.json({ success: true, message, data });
 
-const respondFailure = <T>(c: UsersContext, message: string, status = 500, data?: T) =>
-  c.json({ success: false, message, data }, status);
+const respondFailure = <T>(c: UsersContext, message: string, statusCode: number, data?: T) =>
+  c.json({ success: false, message, data }, statusCode as any);
 
 // Unified auth-check endpoint for login and registration
 users.post('/exist-check', async (c) => {
@@ -43,16 +43,16 @@ users.post('/find-by-identifier', async (c) => {
   try {
     const { isEmail, identifier }: ValidatedIdentifier = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
-    
+
     const user = isEmail
       ? await userRepo.findByEmail(identifier)
       : await userRepo.findByPhoneNumber(identifier);
-    
+
     if (user) {
       return respondSuccess(c, user.id, 'User found successfully');
     }
 
-    return respondSuccess(c, 0, 'User not found', 404);
+    return c.json({ success: true, message: 'User not found', data: 0 }, 404 as any);
   } catch (error) {
     console.error('Error finding user:', error);
     return respondFailure(c, 'Failed to find user', 500, 0);
@@ -83,7 +83,7 @@ users.post('/create', async (c) => {
       provider_id: userData.providerId
     });
     
-    return respondSuccess(c, newUser.id, 'User created successfully', 201);
+    return c.json({ success: true, message: 'User created successfully', data: newUser.id }, 201 as any);
   } catch (error) {
     console.error('Error creating user:', error);
     return respondFailure(c, 'Failed to create user', 500, 0);
@@ -95,14 +95,14 @@ users.post('/find-by-provider', async (c) => {
   try {
     const { authProvider, providerId } = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
-    
+
     const user = await userRepo.findByProvider(authProvider, providerId);
-    
+
     if (user) {
       return respondSuccess(c, user.id, 'User found successfully');
     }
 
-    return respondSuccess(c, 0, 'User not found', 404);
+    return c.json({ success: true, message: 'User not found', data: 0 }, 404 as any);
   } catch (error) {
     console.error('Error finding user by provider:', error);
     return respondFailure(c, 'Failed to find user by provider', 500, 0);

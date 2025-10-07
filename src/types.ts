@@ -100,25 +100,6 @@ export interface ModifyLockSealRequest {
   lockId: number;
 }
 
-export interface CreateMediaObjectRequest {
-  lock_id: number;
-  cloudflare_id?: string;
-  url?: string;
-  file_name?: string;
-  media_type?: string;
-  is_main_picture?: boolean;
-  display_order?: number;
-}
-
-export interface UpdateMediaObjectRequest {
-  cloudflare_id?: string;
-  url?: string;
-  file_name?: string;
-  media_type?: string;
-  is_main_picture?: boolean;
-  display_order?: number;
-}
-
 // Lock DTOs matching .NET API structure
 export interface LockDto {
   LockId: number;
@@ -131,26 +112,6 @@ export interface LockDto {
 export interface LockConnectUserDto {
   userId: number;
   lockId: number;
-}
-
-export interface AlbumMediaDto {
-  mediaId: number;
-  cloudflareId: string;
-  url: string;
-  fileName?: string | null;
-  mediaType: string;
-  isMainPicture: boolean;
-  displayOrder: number;
-  createdAt: string;
-}
-
-export interface AlbumDetailsDto {
-  lockId: number;
-  lockName: string;
-  albumTitle: string;
-  sealDate?: string | null;
-  hashedLockId: string;
-  media: AlbumMediaDto[];
 }
 
 // API Response wrapper types
