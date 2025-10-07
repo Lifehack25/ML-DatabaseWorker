@@ -57,18 +57,22 @@ albums.get('/:identifier', async (c) => {
         const mediaObjects = await mediaRepo.findByLockId(lockId);
         // Sort by display_order
         mediaObjects.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
-        // Map to MediaDto format
+        // Map to MediaDto format (PascalCase)
         const mediaDtos = mediaObjects.map(media => ({
             Id: media.id,
             Type: media.media_type === 'image' ? 0 : 1, // MediaType enum: Image = 0, Video = 1
             Url: media.url,
             IsMainImage: Boolean(media.is_main_picture),
-            DisplayOrder: media.display_order || 0
+            DisplayOrder: media.display_order || 0,
+            CloudflareId: media.cloudflare_id,
+            // TODO: Add video duration when available in database
+            // DurationSeconds: media.duration_seconds
         }));
-        // Build AlbumDto response
+        // Build AlbumDto response (PascalCase)
         const albumDto = {
             AlbumTitle: lock.album_title || 'Untitled Album',
             DateTime: lock.created_at ? lock.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            SealDate: lock.seal_date || null,
             Media: mediaDtos,
             HashedLockId: hashedLockId
         };
