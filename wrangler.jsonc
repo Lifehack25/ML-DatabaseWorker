@@ -13,4 +13,7 @@
   "vars": {
     "WORKER_API_KEY": "WORKER_29939f6a43f9c37e003ad1d0672d67fc"
   }
+  // Note: Secrets (HASHIDS_SALT, HASHIDS_MIN_LENGTH) must be set using:
+  // wrangler secret put HASHIDS_SALT
+  // wrangler secret put HASHIDS_MIN_LENGTH
 }

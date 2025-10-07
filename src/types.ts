@@ -111,7 +111,7 @@ export interface LockDto {
 
 export interface LockConnectUserDto {
   userId: number;
-  lockId: number;
+  hashedLockId: string;
 }
 
 // API Response wrapper types

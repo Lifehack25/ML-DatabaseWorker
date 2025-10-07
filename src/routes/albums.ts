@@ -5,6 +5,8 @@ import { decodeId, encodeId, isHashedId } from '../utils/hashids';
 
 type Bindings = {
   DB: D1Database;
+  HASHIDS_SALT: string;
+  HASHIDS_MIN_LENGTH: string;
 };
 
 const albums = new Hono<{ Bindings: Bindings }>();
@@ -25,13 +27,17 @@ albums.get('/:identifier', async (c) => {
     const lockRepo = new LockRepository(c.env.DB);
     const mediaRepo = new MediaObjectRepository(c.env.DB);
 
+    // Get Hashids configuration from secrets
+    const salt = c.env.HASHIDS_SALT;
+    const minLength = parseInt(c.env.HASHIDS_MIN_LENGTH || '6');
+
     // Decode the identifier (either hashed or direct integer)
     let lockId: number;
     let hashedLockId: string;
 
-    if (isHashedId(identifier)) {
+    if (isHashedId(identifier, salt, minLength)) {
       // It's a hashed ID from the web
-      const decoded = decodeId(identifier);
+      const decoded = decodeId(identifier, salt, minLength);
       if (decoded === null) {
         return c.json({
           success: false,
@@ -50,7 +56,7 @@ albums.get('/:identifier', async (c) => {
         }, 400);
       }
       lockId = parsedId;
-      hashedLockId = encodeId(parsedId);
+      hashedLockId = encodeId(parsedId, salt, minLength);
     }
 
     const lock = await lockRepo.findById(lockId);

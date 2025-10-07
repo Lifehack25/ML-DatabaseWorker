@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { LockRepository } from '../repositories/lockRepository';
 import { UserRepository } from '../repositories/userRepository';
+import { decodeId } from '../utils/hashids';
 import {
   CreateLockRequest,
   UpdateLockRequest,
@@ -15,6 +16,8 @@ import {
 
 type Bindings = {
   DB: D1Database;
+  HASHIDS_SALT: string;
+  HASHIDS_MIN_LENGTH: string;
 };
 
 const locks = new Hono<{ Bindings: Bindings }>();
@@ -69,18 +72,31 @@ locks.get('/user/:userId', async (c) => {
 locks.post('/connect', async (c) => {
   try {
     const dto: LockConnectUserDto = await c.req.json();
-    
-    if (!dto.userId || !dto.lockId) {
+
+    if (!dto.userId || !dto.hashedLockId) {
       return c.json({
         success: false,
-        message: 'Both userId and lockId are required'
+        message: 'Both userId and hashedLockId are required'
+      }, 400);
+    }
+
+    // Get Hashids configuration from secrets
+    const salt = c.env.HASHIDS_SALT;
+    const minLength = parseInt(c.env.HASHIDS_MIN_LENGTH || '6');
+
+    // Decode the hashed lock ID
+    const lockId = decodeId(dto.hashedLockId, salt, minLength);
+    if (lockId === null) {
+      return c.json({
+        success: false,
+        message: 'Invalid hashed lock ID'
       }, 400);
     }
 
     const lockRepo = getLockRepo(c.env.DB);
-    
+
     // Check if lock exists
-    const existingLock = await lockRepo.findById(dto.lockId);
+    const existingLock = await lockRepo.findById(lockId);
     if (!existingLock) {
       return c.json({
         success: false,
@@ -99,13 +115,13 @@ locks.post('/connect', async (c) => {
     }
 
     // Update lock to connect it to the user
-    const updatedLock = await lockRepo.update(dto.lockId, { user_id: dto.userId });
-    
+    const updatedLock = await lockRepo.update(lockId, { user_id: dto.userId });
+
     const response: Response = {
       success: true,
       message: 'Lock successfully connected to user'
     };
-    
+
     return c.json(response);
   } catch (error) {
     console.error('Error connecting lock to user:', error);
