@@ -1,5 +1,5 @@
 import Hashids from 'hashids';
-// Cache for Hashids instances keyed by salt+minLength combination
+// Cache for Hashids instances keyed by salt+minLength combination.
 const hashidsCache = new Map();
 function getHashidsInstance(salt, minLength) {
     const cacheKey = `${salt}_${minLength}`;
