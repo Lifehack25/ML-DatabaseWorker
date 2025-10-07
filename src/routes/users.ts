@@ -15,10 +15,10 @@ const users = new Hono<{ Bindings: Bindings }>();
 const getUserRepo = (db: D1Database) => new UserRepository(db);
 
 const respondSuccess = <T>(c: UsersContext, data: T, message?: string) =>
-  c.json({ success: true, message, data });
+  c.json({ Success: true, Message: message, Data: data });
 
 const respondFailure = <T>(c: UsersContext, message: string, statusCode: number, data?: T) =>
-  c.json({ success: false, message, data }, statusCode as any);
+  c.json({ Success: false, Message: message, Data: data }, statusCode as any);
 
 // Unified auth-check endpoint for login and registration
 users.post('/exist-check', async (c) => {
@@ -52,7 +52,7 @@ users.post('/find-by-identifier', async (c) => {
       return respondSuccess(c, user.id, 'User found successfully');
     }
 
-    return c.json({ success: true, message: 'User not found', data: 0 }, 404 as any);
+    return c.json({ Success: true, Message: 'User not found', Data: 0 }, 404 as any);
   } catch (error) {
     console.error('Error finding user:', error);
     return respondFailure(c, 'Failed to find user', 500, 0);
@@ -75,15 +75,9 @@ users.post('/create', async (c) => {
     }
     
     // Create the user
-    const newUser = await userRepo.create({
-      name: userData.name,
-      email: userData.email,
-      phone_number: userData.phoneNumber,
-      auth_provider: userData.authProvider || 'Registration',
-      provider_id: userData.providerId
-    });
+    const newUser = await userRepo.create(userData);
     
-    return c.json({ success: true, message: 'User created successfully', data: newUser.id }, 201 as any);
+    return c.json({ Success: true, Message: 'User created successfully', Data: newUser.id }, 201 as any);
   } catch (error) {
     console.error('Error creating user:', error);
     return respondFailure(c, 'Failed to create user', 500, 0);
@@ -102,7 +96,7 @@ users.post('/find-by-provider', async (c) => {
       return respondSuccess(c, user.id, 'User found successfully');
     }
 
-    return c.json({ success: true, message: 'User not found', data: 0 }, 404 as any);
+    return c.json({ Success: true, Message: 'User not found', Data: 0 }, 404 as any);
   } catch (error) {
     console.error('Error finding user by provider:', error);
     return respondFailure(c, 'Failed to find user by provider', 500, 0);

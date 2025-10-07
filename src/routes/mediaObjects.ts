@@ -14,8 +14,8 @@ mediaObjects.post('/', async (c) => {
 
     if (!body.lockId) {
       return c.json({
-        success: false,
-        message: 'lockId is required'
+        Success: false,
+        Message: 'lockId is required'
       }, 400);
     }
 
@@ -32,9 +32,9 @@ mediaObjects.post('/', async (c) => {
     });
 
     return c.json({
-      success: true,
-      message: 'Media object created successfully',
-      data: {
+      Success: true,
+      Message: 'Media object created successfully',
+      Data: {
         id: newMedia.id,
         lockId: newMedia.lock_id,
         url: newMedia.url,
@@ -46,8 +46,8 @@ mediaObjects.post('/', async (c) => {
   } catch (error) {
     console.error('Error creating media object:', error);
     return c.json({
-      success: false,
-      message: 'Failed to create media object'
+      Success: false,
+      Message: 'Failed to create media object'
     }, 500);
   }
 });
@@ -60,8 +60,8 @@ mediaObjects.patch('/:id', async (c) => {
 
     if (isNaN(id)) {
       return c.json({
-        success: false,
-        message: 'Invalid media object ID'
+        Success: false,
+        Message: 'Invalid media object ID'
       }, 400);
     }
 
@@ -74,9 +74,9 @@ mediaObjects.patch('/:id', async (c) => {
     });
 
     return c.json({
-      success: true,
-      message: 'Media object updated successfully',
-      data: {
+      Success: true,
+      Message: 'Media object updated successfully',
+      Data: {
         id: updatedMedia.id,
         url: updatedMedia.url,
         displayOrder: updatedMedia.display_order,
@@ -86,8 +86,8 @@ mediaObjects.patch('/:id', async (c) => {
   } catch (error) {
     console.error('Error updating media object:', error);
     return c.json({
-      success: false,
-      message: 'Failed to update media object'
+      Success: false,
+      Message: 'Failed to update media object'
     }, 500);
   }
 });
@@ -99,8 +99,8 @@ mediaObjects.delete('/:id', async (c) => {
 
     if (isNaN(id)) {
       return c.json({
-        success: false,
-        message: 'Invalid media object ID'
+        Success: false,
+        Message: 'Invalid media object ID'
       }, 400);
     }
 
@@ -108,14 +108,14 @@ mediaObjects.delete('/:id', async (c) => {
     await mediaRepo.delete(id);
 
     return c.json({
-      success: true,
-      message: 'Media object deleted successfully'
+      Success: true,
+      Message: 'Media object deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting media object:', error);
     return c.json({
-      success: false,
-      message: 'Failed to delete media object'
+      Success: false,
+      Message: 'Failed to delete media object'
     }, 500);
   }
 });
@@ -128,15 +128,15 @@ mediaObjects.patch('/locks/:lockId/album-title', async (c) => {
 
     if (isNaN(lockId)) {
       return c.json({
-        success: false,
-        message: 'Invalid lock ID'
+        Success: false,
+        Message: 'Invalid lock ID'
       }, 400);
     }
 
     if (!body.albumTitle) {
       return c.json({
-        success: false,
-        message: 'albumTitle is required'
+        Success: false,
+        Message: 'albumTitle is required'
       }, 400);
     }
 
@@ -148,14 +148,14 @@ mediaObjects.patch('/locks/:lockId/album-title', async (c) => {
     });
 
     return c.json({
-      success: true,
-      message: 'Album title updated successfully'
+      Success: true,
+      Message: 'Album title updated successfully'
     });
   } catch (error) {
     console.error('Error updating album title:', error);
     return c.json({
-      success: false,
-      message: 'Failed to update album title'
+      Success: false,
+      Message: 'Failed to update album title'
     }, 500);
   }
 });

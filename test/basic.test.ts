@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { User, CreateUserRequest, ApiResponse } from '../src/types';
+import { User, CreateUserDto, Response } from '../src/types';
 
 describe('Worker structure tests', () => {
   it('should have correct environment setup', () => {
@@ -27,21 +27,21 @@ describe('Worker structure tests', () => {
     expect(mockUser.email_verified).toBeTypeOf('boolean');
   });
 
-  it('should validate CreateUserRequest type', () => {
-    const mockRequest: CreateUserRequest = {
+  it('should validate CreateUserDto type', () => {
+    const mockRequest: CreateUserDto = {
       name: 'New User',
       email: 'new@example.com',
-      auth_provider: 'email'
+      authProvider: 'email'
     };
 
     expect(mockRequest.name).toBeTypeOf('string');
     expect(mockRequest.email).toBeTypeOf('string');
   });
 
-  it('should validate ApiResponse type', () => {
-    const mockResponse: ApiResponse<User> = {
-      success: true,
-      data: {
+  it('should validate Response type', () => {
+    const mockResponse: Response<User> = {
+      Success: true,
+      Data: {
         id: 1,
         name: 'Test',
         email: 'test@example.com',
@@ -54,10 +54,10 @@ describe('Worker structure tests', () => {
         last_login_at: null,
         has_premium_storage: false
       },
-      message: 'Success'
+      Message: 'Success'
     };
 
-    expect(mockResponse.success).toBe(true);
-    expect(mockResponse.data?.name).toBe('Test');
+    expect(mockResponse.Success).toBe(true);
+    expect(mockResponse.Data?.name).toBe('Test');
   });
 });

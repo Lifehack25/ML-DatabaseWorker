@@ -1,4 +1,4 @@
-import { User, CreateUserRequest, D1Result } from '../types';
+import { User, CreateUserDto, D1Result } from '../types';
 
 export class UserRepository {
   constructor(private db: D1Database) {}
@@ -15,14 +15,14 @@ export class UserRepository {
     return result.results[0];
   }
 
-  async create(userData: CreateUserRequest): Promise<User> {
+  async create(userData: CreateUserDto): Promise<User> {
     // Apply default values matching the .NET model defaults
     const user = {
       name: userData.name.trim(),
       email: userData.email || null,
-      phone_number: userData.phone_number || null,
-      auth_provider: userData.auth_provider || '',
-      provider_id: userData.provider_id || null,
+      phone_number: userData.phoneNumber || null,
+      auth_provider: userData.authProvider || '',
+      provider_id: userData.providerId || null,
       email_verified: false, // default
       phone_verified: false, // default
       has_premium_storage: false, // default

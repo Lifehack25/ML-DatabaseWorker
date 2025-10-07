@@ -19,8 +19,8 @@ albums.get('/:identifier', async (c) => {
 
     if (!identifier) {
       return c.json({
-        success: false,
-        message: 'Lock identifier is required'
+        Success: false,
+        Message: 'Lock identifier is required'
       }, 400);
     }
 
@@ -40,8 +40,8 @@ albums.get('/:identifier', async (c) => {
       const decoded = decodeId(identifier, salt, minLength);
       if (decoded === null) {
         return c.json({
-          success: false,
-          message: 'Invalid hashed lock ID'
+          Success: false,
+          Message: 'Invalid hashed lock ID'
         }, 400);
       }
       lockId = decoded;
@@ -51,8 +51,8 @@ albums.get('/:identifier', async (c) => {
       const parsedId = parseInt(identifier);
       if (isNaN(parsedId)) {
         return c.json({
-          success: false,
-          message: 'Invalid lock ID format'
+          Success: false,
+          Message: 'Invalid lock ID format'
         }, 400);
       }
       lockId = parsedId;
@@ -63,8 +63,8 @@ albums.get('/:identifier', async (c) => {
 
     if (!lock) {
       return c.json({
-        success: false,
-        message: 'Album not found'
+        Success: false,
+        Message: 'Album not found'
       }, 404);
     }
 
@@ -96,14 +96,14 @@ albums.get('/:identifier', async (c) => {
     };
 
     return c.json({
-      success: true,
-      data: albumDto
+      Success: true,
+      Data: albumDto
     });
   } catch (error) {
     console.error('Error fetching album:', error);
     return c.json({
-      success: false,
-      message: 'Failed to fetch album'
+      Success: false,
+      Message: 'Failed to fetch album'
     }, 500);
   }
 });

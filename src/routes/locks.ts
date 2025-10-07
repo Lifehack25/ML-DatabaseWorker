@@ -43,8 +43,8 @@ locks.get('/user/:userId', async (c) => {
     
     if (isNaN(userId)) {
       return c.json({
-        success: false,
-        message: 'Invalid user ID'
+        Success: false,
+        Message: 'Invalid user ID'
       }, 400);
     }
 
@@ -55,15 +55,15 @@ locks.get('/user/:userId', async (c) => {
     const lockDtos = locks.map(mapLockToDto);
     
     return c.json({
-      success: true,
-      message: `Retrieved ${lockDtos.length} locks for user ${userId}`,
-      data: lockDtos
+      Success: true,
+      Message: `Retrieved ${lockDtos.length} locks for user ${userId}`,
+      Data: lockDtos
     });
   } catch (error) {
     console.error('Error fetching user locks:', error);
     return c.json({
-      success: false,
-      message: 'Failed to fetch user locks'
+      Success: false,
+      Message: 'Failed to fetch user locks'
     }, 500);
   }
 });
@@ -75,8 +75,8 @@ locks.post('/connect', async (c) => {
 
     if (!dto.userId || !dto.hashedLockId) {
       return c.json({
-        success: false,
-        message: 'Both userId and hashedLockId are required'
+        Success: false,
+        Message: 'Both userId and hashedLockId are required'
       }, 400);
     }
 
@@ -88,8 +88,8 @@ locks.post('/connect', async (c) => {
     const lockId = decodeId(dto.hashedLockId, salt, minLength);
     if (lockId === null) {
       return c.json({
-        success: false,
-        message: 'Invalid hashed lock ID'
+        Success: false,
+        Message: 'Invalid hashed lock ID'
       }, 400);
     }
 
@@ -99,8 +99,8 @@ locks.post('/connect', async (c) => {
     const existingLock = await lockRepo.findById(lockId);
     if (!existingLock) {
       return c.json({
-        success: false,
-        message: 'Lock not found'
+        Success: false,
+        Message: 'Lock not found'
       }, 404);
     }
 
@@ -109,8 +109,8 @@ locks.post('/connect', async (c) => {
     const user = await userRepo.findById(dto.userId);
     if (!user) {
       return c.json({
-        success: false,
-        message: 'User not found'
+        Success: false,
+        Message: 'User not found'
       }, 404);
     }
 
@@ -118,16 +118,16 @@ locks.post('/connect', async (c) => {
     const updatedLock = await lockRepo.update(lockId, { user_id: dto.userId });
 
     const response: Response = {
-      success: true,
-      message: 'Lock successfully connected to user'
+      Success: true,
+      Message: 'Lock successfully connected to user'
     };
 
     return c.json(response);
   } catch (error) {
     console.error('Error connecting lock to user:', error);
     return c.json({
-      success: false,
-      message: 'Failed to connect lock to user'
+      Success: false,
+      Message: 'Failed to connect lock to user'
     }, 500);
   }
 });
@@ -139,8 +139,8 @@ locks.patch('/name', async (c) => {
 
     if (!dto?.lockId || !dto.newName?.trim()) {
       return c.json({
-        success: false,
-        message: 'Both lockId and newName are required',
+        Success: false,
+        Message: 'Both lockId and newName are required',
       }, 400);
     }
 
@@ -148,15 +148,15 @@ locks.patch('/name', async (c) => {
     const updatedLock = await lockRepo.update(dto.lockId, { lock_name: dto.newName.trim() });
 
     return c.json({
-      success: true,
-      message: 'Lock name updated successfully',
-      data: mapLockToDto(updatedLock),
+      Success: true,
+      Message: 'Lock name updated successfully',
+      Data: mapLockToDto(updatedLock),
     });
   } catch (error) {
     console.error('Error updating lock name:', error);
     return c.json({
-      success: false,
-      message: 'Failed to update lock name',
+      Success: false,
+      Message: 'Failed to update lock name',
     }, 500);
   }
 });
@@ -168,8 +168,8 @@ locks.patch('/notification', async (c) => {
 
     if (!dto?.lockId || typeof dto.notifiedWhenScanned !== 'boolean') {
       return c.json({
-        success: false,
-        message: 'lockId and notifiedWhenScanned are required',
+        Success: false,
+        Message: 'lockId and notifiedWhenScanned are required',
       }, 400);
     }
 
@@ -179,15 +179,15 @@ locks.patch('/notification', async (c) => {
     });
 
     return c.json({
-      success: true,
-      message: 'Notification preference updated successfully',
-      data: mapLockToDto(updatedLock),
+      Success: true,
+      Message: 'Notification preference updated successfully',
+      Data: mapLockToDto(updatedLock),
     });
   } catch (error) {
     console.error('Error updating notification preference:', error);
     return c.json({
-      success: false,
-      message: 'Failed to update notification preference',
+      Success: false,
+      Message: 'Failed to update notification preference',
     }, 500);
   }
 });
@@ -201,8 +201,8 @@ locks.patch('/seal', async (c) => {
 
     if (!dto?.lockId) {
       return c.json({
-        success: false,
-        message: 'lockId is required',
+        Success: false,
+        Message: 'lockId is required',
       }, 400);
     }
 
@@ -211,8 +211,8 @@ locks.patch('/seal', async (c) => {
 
     if (!existingLock) {
       return c.json({
-        success: false,
-        message: 'Lock not found',
+        Success: false,
+        Message: 'Lock not found',
       }, 404);
     }
 
@@ -222,15 +222,15 @@ locks.patch('/seal', async (c) => {
     });
 
     return c.json({
-      success: true,
-      message: isCurrentlySealed ? 'Lock unsealed successfully' : 'Lock sealed successfully',
-      data: mapLockToDto(updatedLock),
+      Success: true,
+      Message: isCurrentlySealed ? 'Lock unsealed successfully' : 'Lock sealed successfully',
+      Data: mapLockToDto(updatedLock),
     });
   } catch (error) {
     console.error('Error toggling seal state:', error);
     return c.json({
-      success: false,
-      message: 'Failed to update seal state',
+      Success: false,
+      Message: 'Failed to update seal state',
     }, 500);
   }
 });
@@ -242,8 +242,8 @@ locks.post('/create/:totalLocks', async (c) => {
     
     if (isNaN(totalLocks) || totalLocks <= 0 || totalLocks > 10000) {
       return c.json({
-        success: false,
-        message: 'Invalid totalLocks parameter. Must be between 1 and 10000.'
+        Success: false,
+        Message: 'Invalid totalLocks parameter. Must be between 1 and 10000.'
       }, 400);
     }
 
@@ -286,16 +286,16 @@ locks.post('/create/:totalLocks', async (c) => {
     }
     
     const response: Response = {
-      success: true,
-      message: `Successfully created ${createdLocks.length} locks (${startId} to ${startId + createdLocks.length - 1})`
+      Success: true,
+      Message: `Successfully created ${createdLocks.length} locks (${startId} to ${startId + createdLocks.length - 1})`
     };
-    
+
     return c.json(response);
   } catch (error) {
     console.error('Error creating bulk locks:', error);
     return c.json({
-      success: false,
-      message: 'Failed to create locks'
+      Success: false,
+      Message: 'Failed to create locks'
     }, 500);
   }
 });

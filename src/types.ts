@@ -49,14 +49,6 @@ export interface SendCodeDto {
   identifier: string;
 }
 
-export interface CreateUserRequest {
-  name: string;
-  email?: string;
-  phone_number?: string;
-  auth_provider?: string;
-  provider_id?: string;
-}
-
 export interface CreateUserDto {
   name: string;
   email?: string;
@@ -116,14 +108,14 @@ export interface LockConnectUserDto {
 
 // API Response wrapper types
 export interface Response<T = any> {
-  success: boolean;
-  message?: string;
-  data?: T;
+  Success: boolean;
+  Message?: string;
+  Data?: T;
 }
 
 export interface Response {
-  success: boolean;
-  message?: string;
+  Success: boolean;
+  Message?: string;
 }
 
 // Database result types
