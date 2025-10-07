@@ -1,41 +1,47 @@
 import { Hono } from 'hono';
 import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
-import { LockRepository } from '../repositories/lockRepository';
-import { CreateMediaObjectRequest, UpdateMediaObjectRequest, MediaObject } from '../types';
-import { authMiddleware } from '../middleware/auth';
 
 type Bindings = {
   DB: D1Database;
-  WORKER_API_KEY: string;
 };
 
 const mediaObjects = new Hono<{ Bindings: Bindings }>();
 
-// Apply auth middleware to all routes
-mediaObjects.use('*', authMiddleware);
-
-// Create a new media object
+// POST /media-objects - Create a new media object
 mediaObjects.post('/', async (c) => {
   try {
-    const request: CreateMediaObjectRequest = await c.req.json();
+    const body = await c.req.json();
 
-    const mediaRepo = new MediaObjectRepository(c.env.DB);
-    const lockRepo = new LockRepository(c.env.DB);
-
-    // Verify lock exists
-    const lock = await lockRepo.findById(request.lock_id);
-    if (!lock) {
+    if (!body.lockId) {
       return c.json({
         success: false,
-        message: 'Lock not found'
-      }, 404);
+        message: 'lockId is required'
+      }, 400);
     }
 
-    const mediaObject = await mediaRepo.create(request);
+    const mediaRepo = new MediaObjectRepository(c.env.DB);
+
+    const newMedia = await mediaRepo.create({
+      lock_id: body.lockId,
+      cloudflare_id: body.cloudflareId,
+      url: body.url,
+      file_name: body.fileName,
+      media_type: body.mediaType || 'image',
+      is_main_picture: body.isMainImage || false,
+      display_order: body.displayOrder || 0
+    });
 
     return c.json({
       success: true,
-      data: mediaObject
+      message: 'Media object created successfully',
+      data: {
+        id: newMedia.id,
+        lockId: newMedia.lock_id,
+        url: newMedia.url,
+        mediaType: newMedia.media_type,
+        isMainImage: Boolean(newMedia.is_main_picture),
+        displayOrder: newMedia.display_order
+      }
     });
   } catch (error) {
     console.error('Error creating media object:', error);
@@ -46,11 +52,11 @@ mediaObjects.post('/', async (c) => {
   }
 });
 
-// Update a media object
-mediaObjects.put('/:id', async (c) => {
+// PATCH /media-objects/:id - Update a media object
+mediaObjects.patch('/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const request: UpdateMediaObjectRequest = await c.req.json();
+    const body = await c.req.json();
 
     if (isNaN(id)) {
       return c.json({
@@ -60,18 +66,22 @@ mediaObjects.put('/:id', async (c) => {
     }
 
     const mediaRepo = new MediaObjectRepository(c.env.DB);
-    const mediaObject = await mediaRepo.update(id, request);
 
-    if (!mediaObject) {
-      return c.json({
-        success: false,
-        message: 'Media object not found'
-      }, 404);
-    }
+    const updatedMedia = await mediaRepo.update(id, {
+      url: body.url,
+      display_order: body.displayOrder,
+      is_main_picture: body.isMainImage
+    });
 
     return c.json({
       success: true,
-      data: mediaObject
+      message: 'Media object updated successfully',
+      data: {
+        id: updatedMedia.id,
+        url: updatedMedia.url,
+        displayOrder: updatedMedia.display_order,
+        isMainImage: Boolean(updatedMedia.is_main_picture)
+      }
     });
   } catch (error) {
     console.error('Error updating media object:', error);
@@ -82,7 +92,7 @@ mediaObjects.put('/:id', async (c) => {
   }
 });
 
-// Delete a media object
+// DELETE /media-objects/:id - Delete a media object
 mediaObjects.delete('/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
@@ -95,14 +105,7 @@ mediaObjects.delete('/:id', async (c) => {
     }
 
     const mediaRepo = new MediaObjectRepository(c.env.DB);
-    const deleted = await mediaRepo.delete(id);
-
-    if (!deleted) {
-      return c.json({
-        success: false,
-        message: 'Media object not found'
-      }, 404);
-    }
+    await mediaRepo.delete(id);
 
     return c.json({
       success: true,
@@ -117,37 +120,42 @@ mediaObjects.delete('/:id', async (c) => {
   }
 });
 
-// Reorder media objects for a lock
-mediaObjects.post('/reorder', async (c) => {
+// PATCH /locks/:lockId/album-title - Update lock album title
+mediaObjects.patch('/locks/:lockId/album-title', async (c) => {
   try {
-    const { lockId, mediaOrder }: { lockId: number; mediaOrder: { mediaId: number; displayOrder: number }[] } = await c.req.json();
+    const lockId = parseInt(c.req.param('lockId'));
+    const body = await c.req.json();
 
-    const mediaRepo = new MediaObjectRepository(c.env.DB);
-    const lockRepo = new LockRepository(c.env.DB);
-
-    // Verify lock exists
-    const lock = await lockRepo.findById(lockId);
-    if (!lock) {
+    if (isNaN(lockId)) {
       return c.json({
         success: false,
-        message: 'Lock not found'
-      }, 404);
+        message: 'Invalid lock ID'
+      }, 400);
     }
 
-    // Update display orders
-    for (const item of mediaOrder) {
-      await mediaRepo.update(item.mediaId, { display_order: item.displayOrder });
+    if (!body.albumTitle) {
+      return c.json({
+        success: false,
+        message: 'albumTitle is required'
+      }, 400);
     }
+
+    const { LockRepository } = await import('../repositories/lockRepository');
+    const lockRepo = new LockRepository(c.env.DB);
+
+    await lockRepo.update(lockId, {
+      album_title: body.albumTitle
+    });
 
     return c.json({
       success: true,
-      message: 'Media objects reordered successfully'
+      message: 'Album title updated successfully'
     });
   } catch (error) {
-    console.error('Error reordering media objects:', error);
+    console.error('Error updating album title:', error);
     return c.json({
       success: false,
-      message: 'Failed to reorder media objects'
+      message: 'Failed to update album title'
     }, 500);
   }
 });
