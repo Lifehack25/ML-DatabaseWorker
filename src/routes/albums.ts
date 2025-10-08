@@ -79,6 +79,7 @@ albums.get('/:identifier', async (c) => {
       Id: media.id,
       Type: media.media_type === 'image' ? 0 : 1, // MediaType enum: Image = 0, Video = 1
       Url: media.url,
+      ThumbnailUrl: media.thumbnail_url || null,
       IsMainImage: Boolean(media.is_main_picture),
       DisplayOrder: media.display_order || 0,
       CloudflareId: media.cloudflare_id,

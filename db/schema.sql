@@ -35,6 +35,7 @@ CREATE TABLE media_objects (
     lock_id INTEGER NOT NULL,
     cloudflare_id TEXT NOT NULL DEFAULT '',
     url TEXT NOT NULL DEFAULT '',
+    thumbnail_url TEXT,
     file_name TEXT,
     media_type TEXT NOT NULL DEFAULT '',
     is_main_picture BOOLEAN NOT NULL DEFAULT FALSE,

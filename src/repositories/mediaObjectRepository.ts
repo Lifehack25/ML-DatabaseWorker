@@ -4,6 +4,7 @@ export interface CreateMediaObjectRequest {
   lock_id: number;
   cloudflare_id?: string;
   url?: string;
+  thumbnail_url?: string;
   file_name?: string;
   media_type?: string;
   is_main_picture?: boolean;
@@ -13,6 +14,7 @@ export interface CreateMediaObjectRequest {
 export interface UpdateMediaObjectRequest {
   cloudflare_id?: string;
   url?: string;
+  thumbnail_url?: string;
   file_name?: string;
   media_type?: string;
   is_main_picture?: boolean;
@@ -52,6 +54,7 @@ export class MediaObjectRepository {
       lock_id: mediaData.lock_id,
       cloudflare_id: mediaData.cloudflare_id || '',
       url: mediaData.url || '',
+      thumbnail_url: mediaData.thumbnail_url || null,
       file_name: mediaData.file_name || null,
       media_type: mediaData.media_type || '',
       is_main_picture: mediaData.is_main_picture !== undefined ? mediaData.is_main_picture : false,
@@ -66,13 +69,14 @@ export class MediaObjectRepository {
 
     const result: D1Result = await this.db.prepare(`
       INSERT INTO media_objects (
-        lock_id, cloudflare_id, url, file_name, media_type, 
+        lock_id, cloudflare_id, url, thumbnail_url, file_name, media_type,
         is_main_picture, created_at, display_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       media.lock_id,
       media.cloudflare_id,
       media.url,
+      media.thumbnail_url,
       media.file_name,
       media.media_type,
       media.is_main_picture,
@@ -117,6 +121,11 @@ export class MediaObjectRepository {
     if (mediaData.url !== undefined) {
       updateFields.push('url = ?');
       values.push(mediaData.url);
+    }
+
+    if (mediaData.thumbnail_url !== undefined) {
+      updateFields.push('thumbnail_url = ?');
+      values.push(mediaData.thumbnail_url);
     }
 
     if (mediaData.file_name !== undefined) {
