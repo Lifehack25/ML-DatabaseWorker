@@ -90,7 +90,6 @@ albums.get('/:identifier', async (c) => {
     // Build AlbumDto response (PascalCase)
     const albumDto = {
       AlbumTitle: lock.album_title || 'Untitled Album',
-      DateTime: lock.created_at ? lock.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
       SealDate: lock.seal_date || null,
       Media: mediaDtos,
       HashedLockId: hashedLockId
