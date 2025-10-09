@@ -9,6 +9,7 @@ export interface CreateMediaObjectRequest {
   media_type?: string;
   is_main_picture?: boolean;
   display_order?: number;
+  duration_seconds?: number;
 }
 
 export interface UpdateMediaObjectRequest {
@@ -59,7 +60,8 @@ export class MediaObjectRepository {
       media_type: mediaData.media_type || '',
       is_main_picture: mediaData.is_main_picture !== undefined ? mediaData.is_main_picture : false,
       created_at: new Date().toISOString(),
-      display_order: mediaData.display_order !== undefined ? mediaData.display_order : 0
+      display_order: mediaData.display_order !== undefined ? mediaData.display_order : 0,
+      duration_seconds: mediaData.duration_seconds || null
     };
 
     // If this is being set as main picture, unset any existing main picture for this lock
@@ -70,8 +72,8 @@ export class MediaObjectRepository {
     const result: D1Result = await this.db.prepare(`
       INSERT INTO media_objects (
         lock_id, cloudflare_id, url, thumbnail_url, file_name, media_type,
-        is_main_picture, created_at, display_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        is_main_picture, created_at, display_order, duration_seconds
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       media.lock_id,
       media.cloudflare_id,
@@ -81,7 +83,8 @@ export class MediaObjectRepository {
       media.media_type,
       media.is_main_picture,
       media.created_at,
-      media.display_order
+      media.display_order,
+      media.duration_seconds
     ).run();
 
     if (!result.success) {

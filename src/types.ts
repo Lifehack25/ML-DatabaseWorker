@@ -30,11 +30,13 @@ export interface MediaObject {
   lock_id: number;
   cloudflare_id: string;
   url: string;
+  thumbnail_url?: string;
   file_name?: string;
   media_type: string;
   is_main_picture: boolean;
   created_at: string; // ISO date string
   display_order: number;
+  duration_seconds?: number;
 }
 
 // Request/Response DTOs
