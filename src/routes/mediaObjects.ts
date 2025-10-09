@@ -29,7 +29,8 @@ mediaObjects.post('/', async (c) => {
       file_name: body.fileName,
       media_type: body.mediaType || 'image',
       is_main_picture: body.isMainImage || false,
-      display_order: body.displayOrder || 0
+      display_order: body.displayOrder || 0,
+      duration_seconds: body.durationSeconds || null
     });
 
     return c.json({

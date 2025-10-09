@@ -41,6 +41,7 @@ CREATE TABLE media_objects (
     is_main_picture BOOLEAN NOT NULL DEFAULT FALSE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     display_order INTEGER NOT NULL DEFAULT 0,
+    duration_seconds INTEGER,
     FOREIGN KEY (lock_id) REFERENCES locks(id) ON DELETE CASCADE
 );
 

@@ -83,8 +83,7 @@ albums.get('/:identifier', async (c) => {
       IsMainImage: Boolean(media.is_main_picture),
       DisplayOrder: media.display_order || 0,
       CloudflareId: media.cloudflare_id,
-      // TODO: Add video duration when available in database
-      // DurationSeconds: media.duration_seconds
+      DurationSeconds: media.duration_seconds || null
     }));
 
     // Build AlbumDto response (PascalCase)
