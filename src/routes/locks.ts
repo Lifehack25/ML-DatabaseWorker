@@ -218,7 +218,7 @@ locks.patch('/seal', async (c) => {
 
     const isCurrentlySealed = Boolean(existingLock.seal_date);
     const updatedLock = await lockRepo.update(dto.lockId, {
-      seal_date: isCurrentlySealed ? undefined : formatDateOnly(new Date()),
+      seal_date: isCurrentlySealed ? null : formatDateOnly(new Date()),
     });
 
     return c.json({
