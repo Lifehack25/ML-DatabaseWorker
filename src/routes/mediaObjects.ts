@@ -25,6 +25,7 @@ mediaObjects.post('/', async (c) => {
       lock_id: body.lockId,
       cloudflare_id: body.cloudflareId,
       url: body.url,
+      thumbnail_url: body.thumbnailUrl,
       file_name: body.fileName,
       media_type: body.mediaType || 'image',
       is_main_picture: body.isMainImage || false,
