@@ -40,9 +40,11 @@ mediaObjects.post('/', async (c) => {
         id: newMedia.id,
         lockId: newMedia.lock_id,
         url: newMedia.url,
-        mediaType: newMedia.media_type,
+        thumbnailUrl: newMedia.thumbnail_url || null,
+        type: newMedia.media_type,
         isMainImage: Boolean(newMedia.is_main_picture),
-        displayOrder: newMedia.display_order
+        displayOrder: newMedia.display_order,
+        durationSeconds: newMedia.duration_seconds || null
       }
     });
   } catch (error) {
