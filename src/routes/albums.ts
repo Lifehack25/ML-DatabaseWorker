@@ -82,7 +82,6 @@ albums.get('/:identifier', async (c) => {
       ThumbnailUrl: media.thumbnail_url || null,
       IsMainImage: Boolean(media.is_main_picture),
       DisplayOrder: media.display_order || 0,
-      CloudflareId: media.cloudflare_id,
       DurationSeconds: media.duration_seconds || null
     }));
 
