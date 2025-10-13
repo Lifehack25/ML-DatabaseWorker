@@ -37,7 +37,7 @@ CREATE TABLE media_objects (
     url TEXT NOT NULL DEFAULT '',
     thumbnail_url TEXT,
     file_name TEXT,
-    media_type TEXT NOT NULL DEFAULT '',
+    is_image INTEGER NOT NULL DEFAULT 1,
     is_main_picture BOOLEAN NOT NULL DEFAULT FALSE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     display_order INTEGER NOT NULL DEFAULT 0,

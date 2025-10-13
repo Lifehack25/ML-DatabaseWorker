@@ -77,7 +77,8 @@ albums.get('/:identifier', async (c) => {
     // Map to MediaDto format (PascalCase)
     const mediaDtos = mediaObjects.map(media => ({
       Id: media.id,
-      Type: media.media_type === 'image' ? 0 : 1, // MediaType enum: Image = 0, Video = 1
+      CloudflareId: media.cloudflare_id,
+      IsImage: Boolean(media.is_image),
       Url: media.url,
       ThumbnailUrl: media.thumbnail_url || null,
       IsMainImage: Boolean(media.is_main_picture),

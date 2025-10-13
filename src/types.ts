@@ -32,7 +32,7 @@ export interface MediaObject {
   url: string;
   thumbnail_url?: string;
   file_name?: string;
-  media_type: string;
+  is_image: boolean;
   is_main_picture: boolean;
   created_at: string; // ISO date string
   display_order: number;

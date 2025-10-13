@@ -27,7 +27,7 @@ mediaObjects.post('/', async (c) => {
       url: body.url,
       thumbnail_url: body.thumbnailUrl,
       file_name: body.fileName,
-      media_type: body.mediaType || 'image',
+      is_image: body.isImage ?? true,
       is_main_picture: body.isMainImage || false,
       display_order: body.displayOrder || 0,
       duration_seconds: body.durationSeconds || null
@@ -41,7 +41,7 @@ mediaObjects.post('/', async (c) => {
         lockId: newMedia.lock_id,
         url: newMedia.url,
         thumbnailUrl: newMedia.thumbnail_url || null,
-        type: newMedia.media_type,
+        type: newMedia.is_image ? 'image' : 'video',
         isMainImage: Boolean(newMedia.is_main_picture),
         displayOrder: newMedia.display_order,
         durationSeconds: newMedia.duration_seconds || null

@@ -6,7 +6,7 @@ export interface CreateMediaObjectRequest {
   url?: string;
   thumbnail_url?: string;
   file_name?: string;
-  media_type?: string;
+  is_image?: boolean;
   is_main_picture?: boolean;
   display_order?: number;
   duration_seconds?: number;
@@ -17,7 +17,7 @@ export interface UpdateMediaObjectRequest {
   url?: string;
   thumbnail_url?: string;
   file_name?: string;
-  media_type?: string;
+  is_image?: boolean;
   is_main_picture?: boolean;
   display_order?: number;
 }
@@ -57,7 +57,7 @@ export class MediaObjectRepository {
       url: mediaData.url || '',
       thumbnail_url: mediaData.thumbnail_url || null,
       file_name: mediaData.file_name || null,
-      media_type: mediaData.media_type || '',
+      is_image: mediaData.is_image !== undefined ? mediaData.is_image : true,
       is_main_picture: mediaData.is_main_picture !== undefined ? mediaData.is_main_picture : false,
       created_at: new Date().toISOString(),
       display_order: mediaData.display_order !== undefined ? mediaData.display_order : 0,
@@ -71,7 +71,7 @@ export class MediaObjectRepository {
 
     const result: D1Result = await this.db.prepare(`
       INSERT INTO media_objects (
-        lock_id, cloudflare_id, url, thumbnail_url, file_name, media_type,
+        lock_id, cloudflare_id, url, thumbnail_url, file_name, is_image,
         is_main_picture, created_at, display_order, duration_seconds
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
@@ -80,7 +80,7 @@ export class MediaObjectRepository {
       media.url,
       media.thumbnail_url,
       media.file_name,
-      media.media_type,
+      media.is_image ? 1 : 0,
       media.is_main_picture,
       media.created_at,
       media.display_order,
@@ -136,9 +136,9 @@ export class MediaObjectRepository {
       values.push(mediaData.file_name);
     }
 
-    if (mediaData.media_type !== undefined) {
-      updateFields.push('media_type = ?');
-      values.push(mediaData.media_type);
+    if (mediaData.is_image !== undefined) {
+      updateFields.push('is_image = ?');
+      values.push(mediaData.is_image ? 1 : 0);
     }
 
     if (mediaData.is_main_picture !== undefined) {
