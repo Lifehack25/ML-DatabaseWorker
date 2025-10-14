@@ -6,7 +6,6 @@ import {
   CreateLockRequest,
   UpdateLockRequest,
   UpdateLockNameRequest,
-  UpdateNotificationPreferenceRequest,
   ModifyLockSealRequest,
   Lock,
   LockDto,
@@ -30,9 +29,6 @@ const mapLockToDto = (lock: Lock): LockDto => ({
   LockId: lock.id,
   LockName: lock.lock_name,
   SealDate: lock.seal_date || undefined,
-  NotifiedWhenScanned: typeof lock.notified_when_scanned === 'number'
-    ? lock.notified_when_scanned === 1
-    : Boolean(lock.notified_when_scanned),
   ScanCount: lock.scan_count
 });
 
@@ -161,37 +157,6 @@ locks.patch('/name', async (c) => {
   }
 });
 
-// PATCH /locks/notification - Update notification preference
-locks.patch('/notification', async (c) => {
-  try {
-    const dto = (await c.req.json()) as UpdateNotificationPreferenceRequest;
-
-    if (!dto?.lockId || typeof dto.notifiedWhenScanned !== 'boolean') {
-      return c.json({
-        Success: false,
-        Message: 'lockId and notifiedWhenScanned are required',
-      }, 400);
-    }
-
-    const lockRepo = getLockRepo(c.env.DB);
-    const updatedLock = await lockRepo.update(dto.lockId, {
-      notified_when_scanned: dto.notifiedWhenScanned,
-    });
-
-    return c.json({
-      Success: true,
-      Message: 'Notification preference updated successfully',
-      Data: mapLockToDto(updatedLock),
-    });
-  } catch (error) {
-    console.error('Error updating notification preference:', error);
-    return c.json({
-      Success: false,
-      Message: 'Failed to update notification preference',
-    }, 500);
-  }
-});
-
 const formatDateOnly = (date: Date): string => date.toISOString().split('T')[0];
 
 // PATCH /locks/seal - Toggle seal state
@@ -266,8 +231,7 @@ locks.post('/create/:totalLocks', async (c) => {
         lock_name: `Memory Lock`,
         album_title: `Romeo & Juliet`,
         seal_date: undefined,
-        user_id: undefined,
-        notified_when_scanned: false
+        user_id: undefined
       });
       
       // Process batch when it reaches batchSize or at the end

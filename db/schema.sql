@@ -22,7 +22,6 @@ CREATE TABLE locks (
     lock_name TEXT NOT NULL DEFAULT 'Memory Lock',
     album_title TEXT NOT NULL DEFAULT 'Wonderful Memories',
     seal_date DATE,
-    notified_when_scanned BOOLEAN NOT NULL DEFAULT TRUE,
     scan_count INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER,

@@ -23,17 +23,16 @@ export class LockRepository {
             lock_name: lockData.lock_name || 'Memory Lock',
             album_title: lockData.album_title || 'Wonderful Memories',
             seal_date: lockData.seal_date || null,
-            notified_when_scanned: lockData.notified_when_scanned !== undefined ? lockData.notified_when_scanned : true,
-            scan_count: 0, // default
+            scan_count: 0,
             created_at: new Date().toISOString(),
             user_id: lockData.user_id || null
         };
         const result = await this.db.prepare(`
       INSERT INTO locks (
-        lock_name, album_title, seal_date, notified_when_scanned, 
+        lock_name, album_title, seal_date, 
         scan_count, created_at, user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(lock.lock_name, lock.album_title, lock.seal_date, lock.notified_when_scanned, lock.scan_count, lock.created_at, lock.user_id).run();
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(lock.lock_name, lock.album_title, lock.seal_date, lock.scan_count, lock.created_at, lock.user_id).run();
         if (!result.success) {
             throw new Error('Failed to create lock');
         }
@@ -59,10 +58,6 @@ export class LockRepository {
         if (lockData.seal_date !== undefined) {
             updateFields.push('seal_date = ?');
             values.push(lockData.seal_date);
-        }
-        if (lockData.notified_when_scanned !== undefined) {
-            updateFields.push('notified_when_scanned = ?');
-            values.push(lockData.notified_when_scanned);
         }
         if (lockData.user_id !== undefined) {
             updateFields.push('user_id = ?');

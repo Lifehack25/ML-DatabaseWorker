@@ -4,7 +4,6 @@ export interface CreateLockRequest {
   lock_name?: string;
   album_title?: string;
   seal_date?: string; // ISO date string YYYY-MM-DD
-  notified_when_scanned?: boolean;
   user_id?: number;
 }
 
@@ -12,7 +11,6 @@ export interface UpdateLockRequest {
   lock_name?: string;
   album_title?: string;
   seal_date?: string | null; // ISO date string YYYY-MM-DD or null to clear
-  notified_when_scanned?: boolean;
   user_id?: number;
 }
 
@@ -49,7 +47,6 @@ export class LockRepository {
       lock_name: lockData.lock_name || 'Memory Lock',
       album_title: lockData.album_title || 'Wonderful Memories',
       seal_date: lockData.seal_date || null,
-      notified_when_scanned: lockData.notified_when_scanned !== undefined ? lockData.notified_when_scanned : true,
       scan_count: 0, // default
       created_at: new Date().toISOString(),
       user_id: lockData.user_id || null
@@ -57,14 +54,13 @@ export class LockRepository {
 
     const result: D1Result = await this.db.prepare(`
       INSERT INTO locks (
-        lock_name, album_title, seal_date, notified_when_scanned, 
+        lock_name, album_title, seal_date, 
         scan_count, created_at, user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `).bind(
       lock.lock_name,
       lock.album_title,
       lock.seal_date,
-      lock.notified_when_scanned,
       lock.scan_count,
       lock.created_at,
       lock.user_id
@@ -101,11 +97,6 @@ export class LockRepository {
     if (lockData.seal_date !== undefined) {
       updateFields.push('seal_date = ?');
       values.push(lockData.seal_date);
-    }
-
-    if (lockData.notified_when_scanned !== undefined) {
-      updateFields.push('notified_when_scanned = ?');
-      values.push(lockData.notified_when_scanned);
     }
 
     if (lockData.user_id !== undefined) {

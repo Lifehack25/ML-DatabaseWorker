@@ -19,7 +19,6 @@ export interface Lock {
   lock_name: string;
   album_title: string;
   seal_date?: string; // ISO date string (YYYY-MM-DD)
-  notified_when_scanned: boolean;
   scan_count: number;
   created_at: string; // ISO date string
   user_id?: number;
@@ -69,7 +68,6 @@ export interface CreateLockRequest {
   lock_name?: string;
   album_title?: string;
   seal_date?: string | null; // ISO date string YYYY-MM-DD
-  notified_when_scanned?: boolean;
   user_id?: number;
 }
 
@@ -77,17 +75,11 @@ export interface UpdateLockRequest {
   lock_name?: string;
   album_title?: string;
   seal_date?: string | null; // ISO date string YYYY-MM-DD or null to clear
-  notified_when_scanned?: boolean;
 }
 
 export interface UpdateLockNameRequest {
   lockId: number;
   newName: string;
-}
-
-export interface UpdateNotificationPreferenceRequest {
-  lockId: number;
-  notifiedWhenScanned: boolean;
 }
 
 export interface ModifyLockSealRequest {
@@ -99,7 +91,6 @@ export interface LockDto {
   LockId: number;
   LockName: string;
   SealDate?: string; // ISO date string (YYYY-MM-DD) - nullable DateOnly from .NET
-  NotifiedWhenScanned: boolean;
   ScanCount: number;
 }
 
