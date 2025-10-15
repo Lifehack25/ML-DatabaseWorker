@@ -25,17 +25,16 @@ export class UserRepository {
       provider_id: userData.providerId || null,
       email_verified: false, // default
       phone_verified: false, // default
-      has_premium_storage: false, // default
       created_at: new Date().toISOString(),
       last_login_at: null
     };
 
     const result: D1Result = await this.db.prepare(`
       INSERT INTO users (
-        name, email, phone_number, auth_provider, provider_id, 
-        email_verified, phone_verified, has_premium_storage, 
+        name, email, phone_number, auth_provider, provider_id,
+        email_verified, phone_verified,
         created_at, last_login_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       user.name,
       user.email,
@@ -44,7 +43,6 @@ export class UserRepository {
       user.provider_id,
       user.email_verified,
       user.phone_verified,
-      user.has_premium_storage,
       user.created_at,
       user.last_login_at
     ).run();
@@ -108,13 +106,18 @@ export class UserRepository {
     }
   }
 
-  async updateAuthMetadata(userId: number, metadata: { email_verified?: boolean; last_login_at?: string }): Promise<void> {
+  async updateAuthMetadata(userId: number, metadata: { email_verified?: boolean; phone_verified?: boolean; last_login_at?: string }): Promise<void> {
     const updates: string[] = [];
     const values: unknown[] = [];
 
     if (typeof metadata.email_verified === 'boolean') {
       updates.push('email_verified = ?');
       values.push(metadata.email_verified ? 1 : 0);
+    }
+
+    if (typeof metadata.phone_verified === 'boolean') {
+      updates.push('phone_verified = ?');
+      values.push(metadata.phone_verified ? 1 : 0);
     }
 
     if (typeof metadata.last_login_at === 'string') {

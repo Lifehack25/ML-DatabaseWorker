@@ -125,19 +125,23 @@ users.post('/link-provider', async (c) => {
   }
 });
 
-// Update authentication metadata such as email verification and last login timestamp
+// Update authentication metadata such as email verification, phone verification, and last login timestamp
 users.post('/update-auth-metadata', async (c) => {
   try {
-    const { userId, emailVerified, lastLoginAt }: UpdateAuthMetadataRequest = await c.req.json();
+    const { userId, emailVerified, phoneVerified, lastLoginAt }: UpdateAuthMetadataRequest = await c.req.json();
 
     if (!userId || userId <= 0) {
       return respondFailure(c, 'Invalid user ID supplied', 400, false);
     }
 
-    const updates: { email_verified?: boolean; last_login_at?: string } = {};
+    const updates: { email_verified?: boolean; phone_verified?: boolean; last_login_at?: string } = {};
 
     if (typeof emailVerified === 'boolean') {
       updates.email_verified = emailVerified;
+    }
+
+    if (typeof phoneVerified === 'boolean') {
+      updates.phone_verified = phoneVerified;
     }
 
     if (typeof lastLoginAt === 'string' && lastLoginAt.length > 0) {

@@ -104,6 +104,11 @@ export class LockRepository {
       values.push(lockData.user_id);
     }
 
+    if (lockData.upgraded_storage !== undefined) {
+      updateFields.push('upgraded_storage = ?');
+      values.push(lockData.upgraded_storage ? 1 : 0);
+    }
+
     if (updateFields.length === 0) {
       throw new Error('No fields provided for update');
     }

@@ -13,7 +13,7 @@ CREATE TABLE users (
     phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at DATETIME,
-    has_premium_storage BOOLEAN NOT NULL DEFAULT FALSE
+    device_token TEXT
 );
 
 -- Locks table
@@ -25,6 +25,7 @@ CREATE TABLE locks (
     scan_count INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER,
+    upgraded_storage INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 

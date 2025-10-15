@@ -11,7 +11,7 @@ export interface User {
   phone_verified: boolean;
   created_at: string; // ISO date string
   last_login_at?: string; // ISO date string
-  has_premium_storage: boolean;
+  device_token?: string;
 }
 
 export interface Lock {
@@ -22,6 +22,7 @@ export interface Lock {
   scan_count: number;
   created_at: string; // ISO date string
   user_id?: number;
+  upgraded_storage: boolean;
 }
 
 export interface MediaObject {
@@ -61,6 +62,7 @@ export interface CreateUserDto {
 export interface UpdateAuthMetadataRequest {
   userId: number;
   emailVerified?: boolean | null;
+  phoneVerified?: boolean | null;
   lastLoginAt?: string;
 }
 
@@ -75,6 +77,7 @@ export interface UpdateLockRequest {
   lock_name?: string;
   album_title?: string;
   seal_date?: string | null; // ISO date string YYYY-MM-DD or null to clear
+  upgraded_storage?: boolean;
 }
 
 export interface UpdateLockNameRequest {
@@ -92,6 +95,7 @@ export interface LockDto {
   LockName: string;
   SealDate?: string; // ISO date string (YYYY-MM-DD) - nullable DateOnly from .NET
   ScanCount: number;
+  UpgradedStorage?: boolean;
 }
 
 export interface LockConnectUserDto {

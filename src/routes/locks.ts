@@ -29,7 +29,8 @@ const mapLockToDto = (lock: Lock): LockDto => ({
   LockId: lock.id,
   LockName: lock.lock_name,
   SealDate: lock.seal_date || undefined,
-  ScanCount: lock.scan_count
+  ScanCount: lock.scan_count,
+  UpgradedStorage: Boolean(lock.upgraded_storage)
 });
 
 // GET /locks/user/{userId} - Get all locks for a specific user
@@ -113,12 +114,11 @@ locks.post('/connect', async (c) => {
     // Update lock to connect it to the user
     const updatedLock = await lockRepo.update(lockId, { user_id: dto.userId });
 
-    const response: Response = {
+    return c.json({
       Success: true,
-      Message: 'Lock successfully connected to user'
-    };
-
-    return c.json(response);
+      Message: 'Lock successfully connected to user',
+      Data: mapLockToDto(updatedLock)
+    });
   } catch (error) {
     console.error('Error connecting lock to user:', error);
     return c.json({
@@ -196,6 +196,46 @@ locks.patch('/seal', async (c) => {
     return c.json({
       Success: false,
       Message: 'Failed to update seal state',
+    }, 500);
+  }
+});
+
+// PATCH /locks/upgrade-storage - Upgrade lock to Tier 2 storage
+locks.patch('/upgrade-storage', async (c) => {
+  try {
+    const dto = await c.req.json();
+
+    if (!dto?.lockId) {
+      return c.json({
+        Success: false,
+        Message: 'lockId is required',
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const existingLock = await lockRepo.findById(dto.lockId);
+
+    if (!existingLock) {
+      return c.json({
+        Success: false,
+        Message: 'Lock not found',
+      }, 404);
+    }
+
+    const updatedLock = await lockRepo.update(dto.lockId, {
+      upgraded_storage: true,
+    });
+
+    return c.json({
+      Success: true,
+      Message: 'Storage upgraded successfully',
+      Data: mapLockToDto(updatedLock),
+    });
+  } catch (error) {
+    console.error('Error upgrading storage:', error);
+    return c.json({
+      Success: false,
+      Message: 'Failed to upgrade storage',
     }, 500);
   }
 });
