@@ -106,6 +106,46 @@ export class UserRepository {
     }
   }
 
+  async updateEmail(userId: number, email: string | null): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET email = ? WHERE id = ?'
+    ).bind(email, userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update user email');
+    }
+  }
+
+  async updatePhoneNumber(userId: number, phoneNumber: string | null): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET phone_number = ? WHERE id = ?'
+    ).bind(phoneNumber, userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update user phone number');
+    }
+  }
+
+  async markEmailVerified(userId: number): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET email_verified = 1 WHERE id = ?'
+    ).bind(userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update email verification status');
+    }
+  }
+
+  async markPhoneVerified(userId: number): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET phone_verified = 1 WHERE id = ?'
+    ).bind(userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update phone verification status');
+    }
+  }
+
   async updateAuthMetadata(userId: number, metadata: { email_verified?: boolean; phone_verified?: boolean; last_login_at?: string }): Promise<void> {
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -137,6 +177,16 @@ export class UserRepository {
 
     if (!result.success) {
       throw new Error('Failed to update user authentication metadata');
+    }
+  }
+
+  async delete(userId: number): Promise<void> {
+    const result = await this.db.prepare(
+      'DELETE FROM users WHERE id = ?'
+    ).bind(userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to delete user');
     }
   }
 }

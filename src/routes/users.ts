@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { UserRepository } from '../repositories/userRepository';
-import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest } from '../types';
+import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest, VerifyIdentifierRequest } from '../types';
 import { rateLimiters } from '../middleware/rateLimit';
 
 type Bindings = {
@@ -166,6 +166,102 @@ users.post('/update-auth-metadata', rateLimiters.api, async (c) => {
   } catch (error) {
     console.error('Error updating auth metadata:', error);
     return respondFailure(c, 'Failed to update authentication metadata', 500, false);
+  }
+});
+
+// Get user profile by ID
+users.get('/:userId', rateLimiters.read, async (c) => {
+  try {
+    const userId = parseInt(c.req.param('userId'));
+    if (isNaN(userId) || userId <= 0) {
+      return respondFailure(c, 'Invalid user ID supplied', 400, null);
+    }
+
+    const userRepo = getUserRepo(c.env.DB);
+    const user = await userRepo.findById(userId);
+
+    if (!user) {
+      return respondFailure(c, 'User not found', 404, null);
+    }
+
+    return respondSuccess(c, user, 'User retrieved successfully');
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return respondFailure(c, 'Failed to fetch user profile', 500, null);
+  }
+});
+
+// Verify and update identifier status (email or phone)
+users.post('/verify-identifier', rateLimiters.api, async (c) => {
+  try {
+    const dto: VerifyIdentifierRequest = await c.req.json();
+    const identifier = dto.identifier?.trim();
+
+    if (!dto.userId || dto.userId <= 0 || !identifier) {
+      return respondFailure(c, 'Invalid verification payload', 400, false);
+    }
+
+    const userRepo = getUserRepo(c.env.DB);
+    const user = await userRepo.findById(dto.userId);
+
+    if (!user) {
+      return respondFailure(c, 'User not found', 404, false);
+    }
+
+    if (dto.isEmail) {
+      const storedEmail = user.email?.trim();
+      if (storedEmail) {
+        if (storedEmail.toLowerCase() !== identifier.toLowerCase()) {
+          return respondFailure(c, 'Email does not match existing account email', 409, false);
+        }
+      } else {
+        await userRepo.updateEmail(dto.userId, identifier);
+      }
+
+      await userRepo.markEmailVerified(dto.userId);
+    } else {
+      const storedPhone = (user.phone_number ?? '').replace(/\s+/g, '');
+      const normalizedInput = identifier.replace(/\s+/g, '');
+
+      if (storedPhone) {
+        if (storedPhone !== normalizedInput) {
+          return respondFailure(c, 'Phone number does not match existing account phone', 409, false);
+        }
+      } else {
+        await userRepo.updatePhoneNumber(dto.userId, identifier);
+      }
+
+      await userRepo.markPhoneVerified(dto.userId);
+    }
+
+    return respondSuccess(c, true, 'Identifier verification updated successfully');
+  } catch (error) {
+    console.error('Error verifying identifier:', error);
+    return respondFailure(c, 'Failed to verify identifier', 500, false);
+  }
+});
+
+// Delete user account
+users.delete('/:userId', rateLimiters.api, async (c) => {
+  try {
+    const userId = parseInt(c.req.param('userId'));
+    if (isNaN(userId) || userId <= 0) {
+      return respondFailure(c, 'Invalid user ID supplied', 400, false);
+    }
+
+    const userRepo = getUserRepo(c.env.DB);
+    const existingUser = await userRepo.findById(userId);
+
+    if (!existingUser) {
+      return respondFailure(c, 'User not found', 404, false);
+    }
+
+    await userRepo.delete(userId);
+
+    return respondSuccess(c, true, 'User deleted successfully');
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return respondFailure(c, 'Failed to delete user', 500, false);
   }
 });
 

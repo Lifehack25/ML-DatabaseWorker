@@ -45,6 +45,12 @@ export interface ValidatedIdentifier {
   identifier: string;
 }
 
+export interface VerifyIdentifierRequest {
+  userId: number;
+  isEmail: boolean;
+  identifier: string;
+}
+
 export interface SendCodeDto {
   isLogin: boolean;
   isEmail: boolean;
