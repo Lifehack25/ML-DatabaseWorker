@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { UserRepository } from '../repositories/userRepository';
 import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest } from '../types';
+import { rateLimiters } from '../middleware/rateLimit';
 
 type Bindings = {
   DB: D1Database;
@@ -21,7 +22,8 @@ const respondFailure = <T>(c: UsersContext, message: string, statusCode: number,
   c.json({ Success: false, Message: message, Data: data }, statusCode as any);
 
 // Unified auth-check endpoint for login and registration
-users.post('/exist-check', async (c) => {
+// Rate limited to 60 requests per minute
+users.post('/exist-check', rateLimiters.api, async (c) => {
   try {
     const dto: SendCodeDto = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
@@ -39,7 +41,8 @@ users.post('/exist-check', async (c) => {
 });
 
 // Find user by identifier (email or phone)
-users.post('/find-by-identifier', async (c) => {
+// Rate limited to 60 requests per minute
+users.post('/find-by-identifier', rateLimiters.api, async (c) => {
   try {
     const { isEmail, identifier }: ValidatedIdentifier = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
@@ -60,7 +63,8 @@ users.post('/find-by-identifier', async (c) => {
 });
 
 // Create new user
-users.post('/create', async (c) => {
+// Rate limited to 60 requests per minute
+users.post('/create', rateLimiters.api, async (c) => {
   try {
     const userData: CreateUserDto = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
@@ -85,7 +89,8 @@ users.post('/create', async (c) => {
 });
 
 // Find user by OAuth provider
-users.post('/find-by-provider', async (c) => {
+// Rate limited to 60 requests per minute
+users.post('/find-by-provider', rateLimiters.api, async (c) => {
   try {
     const { authProvider, providerId } = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
@@ -104,7 +109,8 @@ users.post('/find-by-provider', async (c) => {
 });
 
 // Link OAuth provider to existing user
-users.post('/link-provider', async (c) => {
+// Rate limited to 60 requests per minute
+users.post('/link-provider', rateLimiters.api, async (c) => {
   try {
     const { userId, authProvider, providerId } = await c.req.json();
     const userRepo = getUserRepo(c.env.DB);
@@ -126,7 +132,8 @@ users.post('/link-provider', async (c) => {
 });
 
 // Update authentication metadata such as email verification, phone verification, and last login timestamp
-users.post('/update-auth-metadata', async (c) => {
+// Rate limited to 60 requests per minute
+users.post('/update-auth-metadata', rateLimiters.api, async (c) => {
   try {
     const { userId, emailVerified, phoneVerified, lastLoginAt }: UpdateAuthMetadataRequest = await c.req.json();
 

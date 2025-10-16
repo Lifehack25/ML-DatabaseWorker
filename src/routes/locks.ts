@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { LockRepository } from '../repositories/lockRepository';
 import { UserRepository } from '../repositories/userRepository';
 import { decodeId } from '../utils/hashids';
+import { rateLimiters } from '../middleware/rateLimit';
 import {
   CreateLockRequest,
   UpdateLockRequest,
@@ -34,7 +35,8 @@ const mapLockToDto = (lock: Lock): LockDto => ({
 });
 
 // GET /locks/user/{userId} - Get all locks for a specific user
-locks.get('/user/:userId', async (c) => {
+// Rate limited to 120 reads per minute
+locks.get('/user/:userId', rateLimiters.read, async (c) => {
   try {
     const userId = parseInt(c.req.param('userId'));
     
@@ -66,7 +68,8 @@ locks.get('/user/:userId', async (c) => {
 });
 
 // POST /locks/connect - Connect a lock to a user
-locks.post('/connect', async (c) => {
+// Rate limited to 60 API calls per minute
+locks.post('/connect', rateLimiters.api, async (c) => {
   try {
     const dto: LockConnectUserDto = await c.req.json();
 
@@ -129,7 +132,8 @@ locks.post('/connect', async (c) => {
 });
 
 // PATCH /locks/name - Update lock name
-locks.patch('/name', async (c) => {
+// Rate limited to 60 API calls per minute
+locks.patch('/name', rateLimiters.api, async (c) => {
   try {
     const dto = (await c.req.json()) as UpdateLockNameRequest;
 
@@ -160,7 +164,8 @@ locks.patch('/name', async (c) => {
 const formatDateOnly = (date: Date): string => date.toISOString().split('T')[0];
 
 // PATCH /locks/seal - Toggle seal state
-locks.patch('/seal', async (c) => {
+// Rate limited to 60 API calls per minute
+locks.patch('/seal', rateLimiters.api, async (c) => {
   try {
     const dto = (await c.req.json()) as ModifyLockSealRequest;
 
@@ -201,7 +206,8 @@ locks.patch('/seal', async (c) => {
 });
 
 // PATCH /locks/upgrade-storage - Upgrade lock to Tier 2 storage
-locks.patch('/upgrade-storage', async (c) => {
+// Rate limited to 60 API calls per minute
+locks.patch('/upgrade-storage', rateLimiters.api, async (c) => {
   try {
     const dto = await c.req.json();
 
@@ -241,7 +247,8 @@ locks.patch('/upgrade-storage', async (c) => {
 });
 
 // POST /api/locks/generate/{totalLocks} - Bulk create locks for CreateLocks tool
-locks.post('/create/:totalLocks', async (c) => {
+// Rate limited to 5 batch operations per minute
+locks.post('/create/:totalLocks', rateLimiters.batch, async (c) => {
   try {
     const totalLocks = parseInt(c.req.param('totalLocks'));
     

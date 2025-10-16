@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
+import { rateLimiters } from '../middleware/rateLimit';
 
 type Bindings = {
   DB: D1Database;
@@ -7,8 +8,8 @@ type Bindings = {
 
 const mediaObjects = new Hono<{ Bindings: Bindings }>();
 
-// POST /media-objects - Create a new media object
-mediaObjects.post('/', async (c) => {
+// Apply rate limiting to POST routes
+mediaObjects.post('/', rateLimiters.mediaUpload, async (c) => {
   try {
     const body = await c.req.json();
 
@@ -57,7 +58,8 @@ mediaObjects.post('/', async (c) => {
 });
 
 // PATCH /media-objects/:id - Update a media object
-mediaObjects.patch('/:id', async (c) => {
+// Rate limited to 60 API calls per minute
+mediaObjects.patch('/:id', rateLimiters.api, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -97,7 +99,8 @@ mediaObjects.patch('/:id', async (c) => {
 });
 
 // DELETE /media-objects/:id - Delete a media object
-mediaObjects.delete('/:id', async (c) => {
+// Rate limited to 60 API calls per minute
+mediaObjects.delete('/:id', rateLimiters.api, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -125,7 +128,8 @@ mediaObjects.delete('/:id', async (c) => {
 });
 
 // PATCH /locks/:lockId/album-title - Update lock album title
-mediaObjects.patch('/locks/:lockId/album-title', async (c) => {
+// Rate limited to 60 API calls per minute
+mediaObjects.patch('/locks/:lockId/album-title', rateLimiters.api, async (c) => {
   try {
     const lockId = parseInt(c.req.param('lockId'));
     const body = await c.req.json();

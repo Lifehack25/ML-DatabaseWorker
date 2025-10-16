@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { LockRepository } from '../repositories/lockRepository';
 import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
 import { decodeId, encodeId, isHashedId } from '../utils/hashids';
+import { rateLimiters } from '../middleware/rateLimit';
 
 type Bindings = {
   DB: D1Database;
@@ -13,7 +14,8 @@ const albums = new Hono<{ Bindings: Bindings }>();
 
 // GET /album/:identifier - Public endpoint to fetch album data
 // Accepts either a hashed ID (from web) or integer ID (from mobile app)
-albums.get('/:identifier', async (c) => {
+// Rate limited to 120 reads per minute
+albums.get('/:identifier', rateLimiters.read, async (c) => {
   try {
     const identifier = c.req.param('identifier');
 
