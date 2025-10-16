@@ -48,6 +48,7 @@ albums.get('/:identifier', rateLimiters.read, async (c) => {
       }
       lockId = decoded;
       hashedLockId = identifier;
+      await lockRepo.incrementScanCount(lockId);
     } else {
       // It's a direct integer ID from mobile app
       const parsedId = parseInt(identifier);
