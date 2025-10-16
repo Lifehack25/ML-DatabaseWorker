@@ -16,8 +16,11 @@ interface RateLimitEntry {
 // Note: This is per-worker instance. For distributed rate limiting, use Cloudflare KV or Durable Objects
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries periodically to prevent memory leaks
-setInterval(() => {
+/**
+ * Cleanup expired entries from rate limit store
+ * Called on-demand during rate limit checks to prevent memory leaks
+ */
+function cleanupExpiredEntries(): void {
   const now = Date.now();
   const keysToDelete: string[] = [];
 
@@ -28,7 +31,7 @@ setInterval(() => {
   });
 
   keysToDelete.forEach(key => rateLimitStore.delete(key));
-}, 60000); // Cleanup every minute
+}
 
 /**
  * Rate limiting middleware using sliding window algorithm
@@ -55,6 +58,11 @@ export function rateLimit(config: RateLimitConfig) {
   return async (c: Context, next: Next) => {
     const key = keyGenerator(c);
     const now = Date.now();
+
+    // Periodically cleanup expired entries (every ~100 requests)
+    if (Math.random() < 0.01) {
+      cleanupExpiredEntries();
+    }
 
     // Get or create rate limit entry
     let entry = rateLimitStore.get(key);
