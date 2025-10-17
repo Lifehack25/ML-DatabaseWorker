@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { UserRepository } from '../repositories/userRepository';
-import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest, VerifyIdentifierRequest } from '../types';
+import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest, VerifyIdentifierRequest, UpdateUserNameRequest } from '../types';
 import { rateLimiters } from '../middleware/rateLimit';
 
 type Bindings = {
@@ -14,6 +14,30 @@ const users = new Hono<{ Bindings: Bindings }>();
 
 // Helper function to get UserRepository instance
 const getUserRepo = (db: D1Database) => new UserRepository(db);
+
+const toBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'y') {
+      return true;
+    }
+
+    if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'n' || normalized.length === 0) {
+      return false;
+    }
+  }
+
+  return Boolean(value);
+};
 
 const respondSuccess = <T>(c: UsersContext, data: T, message?: string) =>
   c.json({ Success: true, Message: message, Data: data });
@@ -189,8 +213,8 @@ users.get('/:userId', rateLimiters.read, async (c) => {
       name: user.name ?? '',
       email: user.email ?? null,
       phoneNumber: user.phone_number ?? null,
-      emailVerified: !!user.email_verified,
-      phoneVerified: !!user.phone_verified,
+      emailVerified: toBoolean(user.email_verified),
+      phoneVerified: toBoolean(user.phone_verified),
       authProvider: user.auth_provider,
       providerId: user.provider_id ?? null
     };
@@ -199,6 +223,73 @@ users.get('/:userId', rateLimiters.read, async (c) => {
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return respondFailure(c, 'Failed to fetch user profile', 500, null);
+  }
+});
+
+// Update user name
+users.patch('/:userId/name', rateLimiters.api, async (c) => {
+  try {
+    const userId = parseInt(c.req.param('userId'), 10);
+
+    if (isNaN(userId) || userId <= 0) {
+      return respondFailure(c, 'Invalid user ID supplied', 400, null);
+    }
+
+    const payload: UpdateUserNameRequest = await c.req.json();
+    const name = payload?.name?.trim();
+
+    if (!name) {
+      return respondFailure(c, 'Name is required', 400, null);
+    }
+
+    if (name.length > 120) {
+      return respondFailure(c, 'Name must be 120 characters or fewer', 400, null);
+    }
+
+    const userRepo = getUserRepo(c.env.DB);
+    const existingUser = await userRepo.findById(userId);
+
+    if (!existingUser) {
+      return respondFailure(c, 'User not found', 404, null);
+    }
+
+    if (existingUser.name?.trim() === name) {
+      const profile = {
+        id: existingUser.id,
+        name,
+        email: existingUser.email ?? null,
+        phoneNumber: existingUser.phone_number ?? null,
+        emailVerified: toBoolean(existingUser.email_verified),
+        phoneVerified: toBoolean(existingUser.phone_verified),
+        authProvider: existingUser.auth_provider,
+        providerId: existingUser.provider_id ?? null
+      };
+
+      return respondSuccess(c, profile, 'User name is unchanged');
+    }
+
+    await userRepo.updateName(userId, name);
+    const updatedUser = await userRepo.findById(userId);
+
+    if (!updatedUser) {
+      return respondFailure(c, 'Failed to load updated user', 500, null);
+    }
+
+    const profile = {
+      id: updatedUser.id,
+      name: updatedUser.name ?? name,
+      email: updatedUser.email ?? null,
+      phoneNumber: updatedUser.phone_number ?? null,
+      emailVerified: toBoolean(updatedUser.email_verified),
+      phoneVerified: toBoolean(updatedUser.phone_verified),
+      authProvider: updatedUser.auth_provider,
+      providerId: updatedUser.provider_id ?? null
+    };
+
+    return respondSuccess(c, profile, 'User name updated successfully');
+  } catch (error) {
+    console.error('Error updating user name:', error);
+    return respondFailure(c, 'Failed to update user name', 500, null);
   }
 });
 

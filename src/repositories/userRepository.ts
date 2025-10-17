@@ -126,6 +126,16 @@ export class UserRepository {
     }
   }
 
+  async updateName(userId: number, name: string): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET name = ? WHERE id = ?'
+    ).bind(name, userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update user name');
+    }
+  }
+
   async markEmailVerified(userId: number): Promise<void> {
     const result = await this.db.prepare(
       'UPDATE users SET email_verified = 1 WHERE id = ?'

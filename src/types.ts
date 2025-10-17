@@ -72,6 +72,10 @@ export interface UpdateAuthMetadataRequest {
   lastLoginAt?: string;
 }
 
+export interface UpdateUserNameRequest {
+  name: string;
+}
+
 export interface CreateLockRequest {
   lock_name?: string;
   album_title?: string;
