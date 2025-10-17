@@ -184,7 +184,18 @@ users.get('/:userId', rateLimiters.read, async (c) => {
       return respondFailure(c, 'User not found', 404, null);
     }
 
-    return respondSuccess(c, user, 'User retrieved successfully');
+    const profile = {
+      id: user.id,
+      name: user.name ?? '',
+      email: user.email ?? null,
+      phoneNumber: user.phone_number ?? null,
+      emailVerified: !!user.email_verified,
+      phoneVerified: !!user.phone_verified,
+      authProvider: user.auth_provider,
+      providerId: user.provider_id ?? null
+    };
+
+    return respondSuccess(c, profile, 'User retrieved successfully');
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return respondFailure(c, 'Failed to fetch user profile', 500, null);
