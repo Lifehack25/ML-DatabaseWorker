@@ -48,8 +48,23 @@ export class UserRepository {
         }
         return result.results[0];
     }
+    async findByEmailCaseInsensitive(email) {
+        const result = await this.db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').bind(email).all();
+        if (!result.success || result.results.length === 0) {
+            return null;
+        }
+        return result.results[0];
+    }
     async findByPhoneNumber(phoneNumber) {
         const result = await this.db.prepare('SELECT * FROM users WHERE phone_number = ?').bind(phoneNumber).all();
+        if (!result.success || result.results.length === 0) {
+            return null;
+        }
+        return result.results[0];
+    }
+    async findByNormalizedPhoneNumber(phoneNumber) {
+        const normalized = phoneNumber.replace(/[\s\-()+]/g, '');
+        const result = await this.db.prepare('SELECT * FROM users WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone_number, " ", ""), "-", ""), "(", ""), ")", ""), "+", "") = ?').bind(normalized).all();
         if (!result.success || result.results.length === 0) {
             return null;
         }

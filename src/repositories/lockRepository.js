@@ -17,6 +17,19 @@ export class LockRepository {
         }
         return result.results;
     }
+    async findAllByUserId(userId) {
+        const result = await this.db.prepare('SELECT * FROM locks WHERE user_id = ?').bind(userId).all();
+        if (!result.success) {
+            throw new Error('Failed to fetch user locks');
+        }
+        return result.results;
+    }
+    async clearUserAssociation(userId) {
+        const result = await this.db.prepare('UPDATE locks SET user_id = NULL WHERE user_id = ?').bind(userId).run();
+        if (!result.success) {
+            throw new Error('Failed to clear user association from locks');
+        }
+    }
     async create(lockData) {
         // Apply default values matching the .NET model defaults
         const lock = {

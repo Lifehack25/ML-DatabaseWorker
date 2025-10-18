@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { UserRepository } from '../repositories/userRepository';
+import { LockRepository } from '../repositories/lockRepository';
+import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
 import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest, VerifyIdentifierRequest, UpdateUserNameRequest } from '../types';
 import { rateLimiters } from '../middleware/rateLimit';
 
@@ -14,6 +16,8 @@ const users = new Hono<{ Bindings: Bindings }>();
 
 // Helper function to get UserRepository instance
 const getUserRepo = (db: D1Database) => new UserRepository(db);
+const getLockRepo = (db: D1Database) => new LockRepository(db);
+const getMediaRepo = (db: D1Database) => new MediaObjectRepository(db);
 
 const toBoolean = (value: unknown): boolean => {
   if (typeof value === 'boolean') {
@@ -37,6 +41,18 @@ const toBoolean = (value: unknown): boolean => {
   }
 
   return Boolean(value);
+};
+
+const parseBooleanQuery = (value: string | null | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'yes' ||
+    normalized === 'y';
 };
 
 const respondSuccess = <T>(c: UsersContext, data: T, message?: string) =>
@@ -311,25 +327,29 @@ users.post('/verify-identifier', rateLimiters.api, async (c) => {
     }
 
     if (dto.isEmail) {
-      const storedEmail = user.email?.trim();
-      if (storedEmail) {
-        if (storedEmail.toLowerCase() !== identifier.toLowerCase()) {
-          return respondFailure(c, 'Email does not match existing account email', 409, false);
+      const normalizedIdentifier = identifier.toLowerCase();
+      const storedEmailNormalized = user.email ? user.email.trim().toLowerCase() : '';
+
+      if (storedEmailNormalized !== normalizedIdentifier) {
+        const existing = await userRepo.findByEmailCaseInsensitive(identifier);
+        if (existing && existing.id !== dto.userId) {
+          return respondFailure(c, 'Email address is already in use', 409, false);
         }
-      } else {
+
         await userRepo.updateEmail(dto.userId, identifier);
       }
 
       await userRepo.markEmailVerified(dto.userId);
     } else {
+      const sanitizedIdentifier = identifier.replace(/\s+/g, '');
       const storedPhone = (user.phone_number ?? '').replace(/\s+/g, '');
-      const normalizedInput = identifier.replace(/\s+/g, '');
 
-      if (storedPhone) {
-        if (storedPhone !== normalizedInput) {
-          return respondFailure(c, 'Phone number does not match existing account phone', 409, false);
+      if (storedPhone !== sanitizedIdentifier) {
+        const existingPhone = await userRepo.findByPhoneNumber(identifier) ?? await userRepo.findByNormalizedPhoneNumber(identifier);
+        if (existingPhone && existingPhone.id !== dto.userId) {
+          return respondFailure(c, 'Phone number is already in use', 409, false);
         }
-      } else {
+
         await userRepo.updatePhoneNumber(dto.userId, identifier);
       }
 
@@ -358,9 +378,25 @@ users.delete('/:userId', rateLimiters.api, async (c) => {
       return respondFailure(c, 'User not found', 404, false);
     }
 
+    const deleteMedia = parseBooleanQuery(c.req.query('deleteMedia'));
+    const lockRepo = getLockRepo(c.env.DB);
+    const mediaRepo = getMediaRepo(c.env.DB);
+
+    if (deleteMedia) {
+      const locks = await lockRepo.findAllByUserId(userId);
+      for (const lock of locks) {
+        await mediaRepo.deleteByLockId(lock.id);
+      }
+    }
+
+    await lockRepo.clearUserAssociation(userId);
     await userRepo.delete(userId);
 
-    return respondSuccess(c, true, 'User deleted successfully');
+    const message = deleteMedia
+      ? 'User and associated media deleted successfully'
+      : 'User deleted successfully';
+
+    return respondSuccess(c, { deletedMedia: deleteMedia }, message);
   } catch (error) {
     console.error('Error deleting user:', error);
     return respondFailure(c, 'Failed to delete user', 500, false);
