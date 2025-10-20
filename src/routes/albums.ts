@@ -3,11 +3,13 @@ import { LockRepository } from '../repositories/lockRepository';
 import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
 import { decodeId, encodeId, isHashedId } from '../utils/hashids';
 import { rateLimiters } from '../middleware/rateLimit';
+import { generateVisitorHash, buildVisitorKVKey } from '../utils/visitorHash';
 
 type Bindings = {
   DB: D1Database;
   HASHIDS_SALT: string;
   HASHIDS_MIN_LENGTH: string;
+  ALBUM_VISITORS: KVNamespace;
 };
 
 const albums = new Hono<{ Bindings: Bindings }>();
@@ -48,7 +50,26 @@ albums.get('/:identifier', rateLimiters.read, async (c) => {
       }
       lockId = decoded;
       hashedLockId = identifier;
-      await lockRepo.incrementScanCount(lockId);
+
+      // Unique visitor tracking: only increment scan_count for unique visitors within 12 hours
+      const visitorIp = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+      const userAgent = c.req.header('User-Agent') || 'unknown';
+
+      // Generate visitor hash and build KV key
+      const visitorHash = await generateVisitorHash(visitorIp, userAgent);
+      const kvKey = buildVisitorKVKey(lockId, visitorHash);
+
+      // Check if this visitor has viewed this album recently (within 12 hours)
+      const existingVisit = await c.env.ALBUM_VISITORS.get(kvKey);
+
+      if (!existingVisit) {
+        // New unique visitor - increment scan count
+        await lockRepo.incrementScanCount(lockId);
+
+        // Store visitor hash in KV with 12-hour TTL (43200 seconds)
+        const timestamp = new Date().toISOString();
+        await c.env.ALBUM_VISITORS.put(kvKey, timestamp, { expirationTtl: 43200 });
+      }
     } else {
       // It's a direct integer ID from mobile app
       const parsedId = parseInt(identifier);
