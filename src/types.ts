@@ -12,6 +12,7 @@ export interface User {
   created_at: string; // ISO date string
   last_login_at?: string; // ISO date string
   device_token?: string;
+  last_notification_prompt?: string; // ISO date string
 }
 
 export interface Lock {
@@ -74,6 +75,10 @@ export interface UpdateAuthMetadataRequest {
 
 export interface UpdateUserNameRequest {
   name: string;
+}
+
+export interface UpdateDeviceTokenRequest {
+  deviceToken: string;
 }
 
 export interface CreateLockRequest {

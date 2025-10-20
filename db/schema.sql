@@ -13,7 +13,8 @@ CREATE TABLE users (
     phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at DATETIME,
-    device_token TEXT
+    device_token TEXT,
+    last_notification_prompt DATETIME
 );
 
 -- Locks table

@@ -3,7 +3,7 @@ import type { Context } from 'hono';
 import { UserRepository } from '../repositories/userRepository';
 import { LockRepository } from '../repositories/lockRepository';
 import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
-import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest, VerifyIdentifierRequest, UpdateUserNameRequest } from '../types';
+import { SendCodeDto, ValidatedIdentifier, CreateUserDto, Response, UpdateAuthMetadataRequest, VerifyIdentifierRequest, UpdateUserNameRequest, UpdateDeviceTokenRequest } from '../types';
 import { rateLimiters } from '../middleware/rateLimit';
 
 type Bindings = {
@@ -232,7 +232,8 @@ users.get('/:userId', rateLimiters.read, async (c) => {
       emailVerified: toBoolean(user.email_verified),
       phoneVerified: toBoolean(user.phone_verified),
       authProvider: user.auth_provider,
-      providerId: user.provider_id ?? null
+      providerId: user.provider_id ?? null,
+      deviceToken: user.device_token ?? null
     };
 
     return respondSuccess(c, profile, 'User retrieved successfully');
@@ -278,7 +279,8 @@ users.patch('/:userId/name', rateLimiters.api, async (c) => {
         emailVerified: toBoolean(existingUser.email_verified),
         phoneVerified: toBoolean(existingUser.phone_verified),
         authProvider: existingUser.auth_provider,
-        providerId: existingUser.provider_id ?? null
+        providerId: existingUser.provider_id ?? null,
+        deviceToken: existingUser.device_token ?? null
       };
 
       return respondSuccess(c, profile, 'User name is unchanged');
@@ -299,7 +301,8 @@ users.patch('/:userId/name', rateLimiters.api, async (c) => {
       emailVerified: toBoolean(updatedUser.email_verified),
       phoneVerified: toBoolean(updatedUser.phone_verified),
       authProvider: updatedUser.auth_provider,
-      providerId: updatedUser.provider_id ?? null
+      providerId: updatedUser.provider_id ?? null,
+      deviceToken: updatedUser.device_token ?? null
     };
 
     return respondSuccess(c, profile, 'User name updated successfully');
@@ -360,6 +363,38 @@ users.post('/verify-identifier', rateLimiters.api, async (c) => {
   } catch (error) {
     console.error('Error verifying identifier:', error);
     return respondFailure(c, 'Failed to verify identifier', 500, false);
+  }
+});
+
+// Update device token for push notifications
+users.patch('/:userId/device-token', rateLimiters.api, async (c) => {
+  try {
+    const userId = parseInt(c.req.param('userId'), 10);
+
+    if (isNaN(userId) || userId <= 0) {
+      return respondFailure(c, 'Invalid user ID supplied', 400, false);
+    }
+
+    const payload: UpdateDeviceTokenRequest = await c.req.json();
+    const deviceToken = payload?.deviceToken?.trim();
+
+    if (!deviceToken) {
+      return respondFailure(c, 'Device token is required', 400, false);
+    }
+
+    const userRepo = getUserRepo(c.env.DB);
+    const existingUser = await userRepo.findById(userId);
+
+    if (!existingUser) {
+      return respondFailure(c, 'User not found', 404, false);
+    }
+
+    await userRepo.updateDeviceToken(userId, deviceToken);
+
+    return respondSuccess(c, true, 'Device token updated successfully');
+  } catch (error) {
+    console.error('Error updating device token:', error);
+    return respondFailure(c, 'Failed to update device token', 500, false);
   }
 });
 

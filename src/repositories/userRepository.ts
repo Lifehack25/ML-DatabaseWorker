@@ -215,6 +215,16 @@ export class UserRepository {
     }
   }
 
+  async updateDeviceToken(userId: number, deviceToken: string): Promise<void> {
+    const result = await this.db.prepare(
+      'UPDATE users SET device_token = ?, last_notification_prompt = ? WHERE id = ?'
+    ).bind(deviceToken, new Date().toISOString(), userId).run();
+
+    if (!result.success) {
+      throw new Error('Failed to update device token');
+    }
+  }
+
   async delete(userId: number): Promise<void> {
     const result = await this.db.prepare(
       'DELETE FROM users WHERE id = ?'
