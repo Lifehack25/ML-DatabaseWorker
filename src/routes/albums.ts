@@ -1,25 +1,26 @@
 import { Hono } from 'hono';
+import type { Lock } from '../types';
 import { LockRepository } from '../repositories/lockRepository';
 import { MediaObjectRepository } from '../repositories/mediaObjectRepository';
 import { decodeId, encodeId, isHashedId } from '../utils/hashids';
 import { rateLimiters } from '../middleware/rateLimit';
-import { generateVisitorHash, buildVisitorKVKey } from '../utils/visitorHash';
+import { sendMilestoneNotification } from '../services/milestoneNotification';
 
 type Bindings = {
   DB: D1Database;
   HASHIDS_SALT: string;
   HASHIDS_MIN_LENGTH: string;
-  ALBUM_VISITORS: KVNamespace;
+  CORE_API_BASE_URL?: string;
+  CORE_API_SHARED_SECRET?: string;
 };
 
 const albums = new Hono<{ Bindings: Bindings }>();
 
-// GET /album/:identifier - Public endpoint to fetch album data
-// Accepts either a hashed ID (from web) or integer ID (from mobile app)
-// Rate limited to 120 reads per minute
 albums.get('/:identifier', rateLimiters.read, async (c) => {
   try {
     const identifier = c.req.param('identifier');
+    const viewerRole = (c.req.query('viewer') || '').toLowerCase();
+    const isOwnerView = viewerRole === 'owner';
 
     if (!identifier) {
       return c.json({
@@ -38,6 +39,7 @@ albums.get('/:identifier', rateLimiters.read, async (c) => {
     // Decode the identifier (either hashed or direct integer)
     let lockId: number;
     let hashedLockId: string;
+    let lockData: Lock | null = null;
 
     if (isHashedId(identifier, salt, minLength)) {
       // It's a hashed ID from the web
@@ -51,24 +53,20 @@ albums.get('/:identifier', rateLimiters.read, async (c) => {
       lockId = decoded;
       hashedLockId = identifier;
 
-      // Unique visitor tracking: only increment scan_count for unique visitors within 12 hours
-      const visitorIp = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
-      const userAgent = c.req.header('User-Agent') || 'unknown';
+      if (!isOwnerView) {
+        // Increment scan count for non-owner views
+        const { lock: updatedLock, milestoneReached } = await lockRepo.incrementScanCount(lockId);
+        lockData = updatedLock;
 
-      // Generate visitor hash and build KV key
-      const visitorHash = await generateVisitorHash(visitorIp, userAgent);
-      const kvKey = buildVisitorKVKey(lockId, visitorHash);
-
-      // Check if this visitor has viewed this album recently (within 12 hours)
-      const existingVisit = await c.env.ALBUM_VISITORS.get(kvKey);
-
-      if (!existingVisit) {
-        // New unique visitor - increment scan count
-        await lockRepo.incrementScanCount(lockId);
-
-        // Store visitor hash in KV with 12-hour TTL (43200 seconds)
-        const timestamp = new Date().toISOString();
-        await c.env.ALBUM_VISITORS.put(kvKey, timestamp, { expirationTtl: 43200 });
+        if (milestoneReached && updatedLock.user_id) {
+          await sendMilestoneNotification(c.env, {
+            userId: updatedLock.user_id,
+            lockId,
+            lockName: updatedLock.lock_name,
+            scanCount: updatedLock.scan_count,
+            milestone: milestoneReached
+          });
+        }
       }
     } else {
       // It's a direct integer ID from mobile app
@@ -83,7 +81,7 @@ albums.get('/:identifier', rateLimiters.read, async (c) => {
       hashedLockId = encodeId(parsedId, salt, minLength);
     }
 
-    const lock = await lockRepo.findById(lockId);
+    const lock = lockData ?? await lockRepo.findById(lockId);
 
     if (!lock) {
       return c.json({

@@ -10,6 +10,8 @@ import albums from './routes/albums';
 type Bindings = {
   DB: D1Database;
   WORKER_API_KEY: string;
+  CORE_API_BASE_URL?: string;
+  CORE_API_SHARED_SECRET?: string;
   ENVIRONMENT?: string;
 };
 

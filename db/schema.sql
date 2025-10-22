@@ -24,6 +24,7 @@ CREATE TABLE locks (
     album_title TEXT NOT NULL DEFAULT 'Wonderful Memories',
     seal_date DATE,
     scan_count INTEGER NOT NULL DEFAULT 0,
+    last_scan_milestone INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER,
     upgraded_storage INTEGER NOT NULL DEFAULT 0,

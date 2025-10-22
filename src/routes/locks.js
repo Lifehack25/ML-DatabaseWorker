@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { LockRepository } from '../repositories/lockRepository';
 import { UserRepository } from '../repositories/userRepository';
 import { decodeId } from '../utils/hashids';
+import { rateLimiters } from '../middleware/rateLimit';
 const locks = new Hono();
 // Helper function to get LockRepository instance
 const getLockRepo = (db) => new LockRepository(db);
@@ -13,7 +14,7 @@ const mapLockToDto = (lock) => ({
     ScanCount: lock.scan_count
 });
 // GET /locks/user/{userId} - Get all locks for a specific user
-locks.get('/user/:userId', async (c) => {
+locks.get('/user/:userId', rateLimiters.read, async (c) => {
     try {
         const userId = parseInt(c.req.param('userId'));
         if (isNaN(userId)) {
@@ -41,7 +42,7 @@ locks.get('/user/:userId', async (c) => {
     }
 });
 // POST /locks/connect - Connect a lock to a user
-locks.post('/connect', async (c) => {
+locks.post('/connect', rateLimiters.api, async (c) => {
     try {
         const dto = await c.req.json();
         if (!dto.userId || !dto.hashedLockId) {

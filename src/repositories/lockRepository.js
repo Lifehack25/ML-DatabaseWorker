@@ -1,3 +1,4 @@
+const SCAN_MILESTONES = [1, 25, 50, 100, 250, 500, 750, 1000];
 export class LockRepository {
     db;
     constructor(db) {
@@ -99,7 +100,15 @@ export class LockRepository {
         }
     }
     async incrementScanCount(id) {
-        const result = await this.db.prepare('UPDATE locks SET scan_count = scan_count + 1 WHERE id = ?').bind(id).run();
+        const existingLock = await this.findById(id);
+        if (!existingLock) {
+            throw new Error('Lock not found before scan count update');
+        }
+        const currentMilestone = (existingLock.last_scan_milestone ?? 0);
+        const newScanCount = existingLock.scan_count + 1;
+        const milestoneReached = SCAN_MILESTONES.includes(newScanCount) && newScanCount > currentMilestone ? newScanCount : null;
+        const milestoneToPersist = milestoneReached ?? currentMilestone;
+        const result = await this.db.prepare('UPDATE locks SET scan_count = ?, last_scan_milestone = ? WHERE id = ?').bind(newScanCount, milestoneToPersist, id).run();
         if (!result.success) {
             throw new Error('Failed to increment scan count');
         }
@@ -107,7 +116,7 @@ export class LockRepository {
         if (!updatedLock) {
             throw new Error('Lock not found after scan count update');
         }
-        return updatedLock;
+        return { lock: updatedLock, milestoneReached };
     }
     async getLastLock() {
         const result = await this.db.prepare('SELECT * FROM locks ORDER BY id DESC LIMIT 1').all();

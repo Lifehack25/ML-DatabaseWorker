@@ -10,14 +10,9 @@
       "database_id": "3afe1cf6-4d2c-4461-9b41-1c8e232e8361"
     }
   ],
-  "kv_namespaces": [
-    {
-      "binding": "ALBUM_VISITORS",
-      "id": "52a69fdd7633477ca6ccebd2b2f9de5d"
-    }
-  ],
   "vars": {
-    "WORKER_API_KEY": "WORKER_29939f6a43f9c37e003ad1d0672d67fc"
+    "WORKER_API_KEY": "WORKER_29939f6a43f9c37e003ad1d0672d67fc",
+    "CORE_API_BASE_URL": "https://api.memorylocks.com"
   }
   // Note: Secrets (HASHIDS_SALT, HASHIDS_MIN_LENGTH) must be set using:
   // wrangler secret put HASHIDS_SALT

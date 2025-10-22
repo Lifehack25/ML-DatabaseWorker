@@ -4,6 +4,8 @@
 declare namespace Cloudflare {
 	interface Env {
 		WORKER_API_KEY: "WORKER_29939f6a43f9c37e003ad1d0672d67fc";
+		CORE_API_BASE_URL: string;
+		CORE_API_SHARED_SECRET: string;
 		DB: D1Database;
 	}
 }

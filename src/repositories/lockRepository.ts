@@ -1,4 +1,5 @@
 import { Lock, D1Result } from '../types';
+import { SCAN_MILESTONES } from '../constants/milestones';
 
 export interface CreateLockRequest {
   lock_name?: string;
@@ -163,10 +164,24 @@ export class LockRepository {
     }
   }
 
-  async incrementScanCount(id: number): Promise<Lock> {
-    const result: D1Result = await this.db.prepare(
-      'UPDATE locks SET scan_count = scan_count + 1 WHERE id = ?'
-    ).bind(id).run();
+  async incrementScanCount(id: number): Promise<{ lock: Lock; milestoneReached: number | null }> {
+    const existingLock = await this.findById(id);
+    if (!existingLock) {
+      throw new Error('Lock not found before scan count update');
+    }
+
+    const currentMilestone = existingLock.last_scan_milestone ?? 0;
+    const newScanCount = existingLock.scan_count + 1;
+    const milestoneReached =
+      SCAN_MILESTONES.includes(newScanCount) && newScanCount > currentMilestone
+        ? newScanCount
+        : null;
+    const milestoneToPersist = milestoneReached ?? currentMilestone;
+
+    const result: D1Result = await this.db
+      .prepare('UPDATE locks SET scan_count = ?, last_scan_milestone = ? WHERE id = ?')
+      .bind(newScanCount, milestoneToPersist, id)
+      .run();
 
     if (!result.success) {
       throw new Error('Failed to increment scan count');
@@ -177,7 +192,7 @@ export class LockRepository {
       throw new Error('Lock not found after scan count update');
     }
 
-    return updatedLock;
+    return { lock: updatedLock, milestoneReached };
   }
 
   async getLastLock(): Promise<Lock | null> {

@@ -21,9 +21,18 @@ export interface Lock {
   album_title: string;
   seal_date?: string; // ISO date string (YYYY-MM-DD)
   scan_count: number;
+  last_scan_milestone: number;
   created_at: string; // ISO date string
   user_id?: number;
   upgraded_storage: boolean;
+}
+
+export interface ScanMilestoneEvent {
+  userId: number;
+  lockId: number;
+  lockName?: string;
+  scanCount: number;
+  milestone: number;
 }
 
 export interface MediaObject {
