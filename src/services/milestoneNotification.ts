@@ -5,7 +5,7 @@ type MilestoneBindings = {
   CORE_API_SHARED_SECRET?: string;
 };
 
-const MILESTONE_ENDPOINT = '/internal/notifications/milestone';
+const MILESTONE_ENDPOINT = '/push-notifications/milestone';
 
 export async function sendMilestoneNotification(
   env: MilestoneBindings,
