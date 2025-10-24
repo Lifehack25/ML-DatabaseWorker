@@ -127,6 +127,68 @@ mediaObjects.delete('/:id', rateLimiters.api, async (c) => {
   }
 });
 
+// POST /media-objects/batch-reorder - Batch update display orders
+// Rate limited to 60 API calls per minute
+mediaObjects.post('/batch-reorder', rateLimiters.api, async (c) => {
+  try {
+    const updates = await c.req.json();
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return c.json({
+        Success: false,
+        Message: 'Updates array is required and must not be empty'
+      }, 400);
+    }
+
+    // Validate all updates have required fields
+    for (const update of updates) {
+      if (!update.id || update.displayOrder === undefined) {
+        return c.json({
+          Success: false,
+          Message: 'Each update must have id and displayOrder'
+        }, 400);
+      }
+    }
+
+    // Prepare batch statements
+    const statements = updates.map(update =>
+      c.env.DB.prepare('UPDATE media_objects SET display_order = ? WHERE id = ?')
+        .bind(update.displayOrder, update.id)
+    );
+
+    // Execute all updates in a single batch transaction
+    const results = await c.env.DB.batch(statements);
+
+    // Check if all updates succeeded
+    const successCount = results.filter(r => r.success).length;
+
+    if (successCount === updates.length) {
+      return c.json({
+        Success: true,
+        Message: `Successfully reordered ${successCount} media objects`,
+        Data: {
+          updatedCount: successCount
+        }
+      });
+    } else {
+      return c.json({
+        Success: false,
+        Message: `Only ${successCount} of ${updates.length} updates succeeded`,
+        Data: {
+          updatedCount: successCount,
+          failedCount: updates.length - successCount
+        }
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Error batch reordering media objects:', error);
+    return c.json({
+      Success: false,
+      Message: 'Failed to batch reorder media objects'
+    }, 500);
+  }
+});
+
 // PATCH /locks/:lockId/album-title - Update lock album title
 // Rate limited to 60 API calls per minute
 mediaObjects.patch('/locks/:lockId/album-title', rateLimiters.api, async (c) => {

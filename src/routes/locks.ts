@@ -246,6 +246,101 @@ locks.patch('/upgrade-storage', rateLimiters.api, async (c) => {
   }
 });
 
+// GET /locks/:id - Get a single lock by ID
+// Rate limited to 120 reads per minute
+locks.get('/:id', rateLimiters.read, async (c) => {
+  try {
+    const lockId = parseInt(c.req.param('id'));
+
+    if (isNaN(lockId)) {
+      return c.json({
+        Success: false,
+        Message: 'Invalid lock ID'
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const lock = await lockRepo.findById(lockId);
+
+    if (!lock) {
+      return c.json({
+        Success: false,
+        Message: 'Lock not found'
+      }, 404);
+    }
+
+    return c.json({
+      Success: true,
+      Message: 'Lock retrieved successfully',
+      Data: mapLockToDto(lock)
+    });
+  } catch (error) {
+    console.error('Error fetching lock:', error);
+    return c.json({
+      Success: false,
+      Message: 'Failed to fetch lock'
+    }, 500);
+  }
+});
+
+// GET /locks/:id/validation-data - Get combined lock and media data for validation
+// Rate limited to 120 reads per minute
+locks.get('/:id/validation-data', rateLimiters.read, async (c) => {
+  try {
+    const lockId = parseInt(c.req.param('id'));
+
+    if (isNaN(lockId)) {
+      return c.json({
+        Success: false,
+        Message: 'Invalid lock ID'
+      }, 400);
+    }
+
+    const lockRepo = getLockRepo(c.env.DB);
+    const { MediaObjectRepository } = await import('../repositories/mediaObjectRepository');
+    const mediaRepo = new MediaObjectRepository(c.env.DB);
+
+    // Fetch lock and media data in parallel
+    const [lock, mediaObjects] = await Promise.all([
+      lockRepo.findById(lockId),
+      mediaRepo.findByLockId(lockId)
+    ]);
+
+    if (!lock) {
+      return c.json({
+        Success: false,
+        Message: 'Lock not found'
+      }, 404);
+    }
+
+    // Map media objects to minimal format needed for validation
+    const media = mediaObjects.map(m => ({
+      id: m.id,
+      isImage: Boolean(m.is_image),
+      isMainImage: Boolean(m.is_main_picture),
+      durationSeconds: m.duration_seconds || null
+    }));
+
+    return c.json({
+      Success: true,
+      Message: 'Validation data retrieved successfully',
+      Data: {
+        lock: {
+          id: lock.id,
+          upgradedStorage: Boolean(lock.upgraded_storage)
+        },
+        media: media
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching validation data:', error);
+    return c.json({
+      Success: false,
+      Message: 'Failed to fetch validation data'
+    }, 500);
+  }
+});
+
 // POST /api/locks/generate/{totalLocks} - Bulk create locks for CreateLocks tool
 // Rate limited to 5 batch operations per minute
 locks.post('/create/:totalLocks', rateLimiters.batch, async (c) => {

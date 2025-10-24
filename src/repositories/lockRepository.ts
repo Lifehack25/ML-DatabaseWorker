@@ -13,6 +13,7 @@ export interface UpdateLockRequest {
   album_title?: string;
   seal_date?: string | null; // ISO date string YYYY-MM-DD or null to clear
   user_id?: number;
+  upgraded_storage?: boolean;
 }
 
 export class LockRepository {
